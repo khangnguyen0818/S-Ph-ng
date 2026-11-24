@@ -1,0 +1,1544 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#3A7F7B">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Sổ Phòng">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" type="image/png" href="icon-180.png">
+<script src="config.js?v=202611242221"></script><title>Sổ Phòng</title></head><body>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap">
+<style>
+/* Bố cục: sổ lễ tân — thanh trên (nhà đang chọn + người dùng), dải tab, vùng làm việc; trên điện thoại tab dính đáy màn hình */
+:root{
+  --bg:#F3F5F6; --surface:#FFFFFF; --surface-2:#EDF1F2; --line:#DCE3E5; --ink:#27373D; --muted:#6A7B80;
+  --accent:#3A7F7B; --accent-ink:#FFFFFF; --accent-soft:#E0EFED; --brass:#9C7A3C;
+  --st-booked:#3F6DB5; --st-booked-bg:#CCDBF2; --st-in:#3B8A5C; --st-in-bg:#C8E6D3;
+  --st-out:#7D8A8F; --st-out-bg:#DCE2E4; --st-late:#B9463F; --st-late-bg:#F2CCC8;
+  --st-noshow:#AA6D2F; --st-noshow-bg:#EFD9BF; --st-block:#66737A; --st-block-bg:#D3D9DC;
+  --hk-sach:#4A8C66; --hk-ban:#BE5B54; --hk-dangdon:#B08A3E; --hk-chokiem:#8069B0; --hk-baotri:#77848A;
+  --overlay:rgba(20,32,36,.38); --on-st:#FFFFFF; --out-bar:#CDD4D7; --on-out:#4A5A60;
+  --shadow:0 1px 2px rgba(19,36,42,.06),0 6px 18px rgba(19,36,42,.07);
+  --f-body:"Be Vietnam Pro",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --f-display:"Space Grotesk","Be Vietnam Pro",system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#1D2629; --surface:#242F33; --surface-2:#2B373B; --line:#38464B; --ink:#D3DCDE; --muted:#93A2A6;
+    --accent:#7AB3AE; --accent-ink:#152422; --accent-soft:#2C403F; --brass:#CDAE73;
+    --st-booked:#9DB8E6; --st-booked-bg:#3D5A88; --st-in:#97D0AC; --st-in-bg:#3B6A50;
+    --st-out:#AEB8BB; --st-out-bg:#46535A; --st-late:#F0A49D; --st-late-bg:#844A47;
+    --st-noshow:#E6BD8E; --st-noshow-bg:#735A38; --st-block:#B4BEC1; --st-block-bg:#4A565B;
+    --hk-sach:#8DBC9F; --hk-ban:#DB958F; --hk-dangdon:#D4B577; --hk-chokiem:#B3A5D6; --hk-baotri:#A3AEB1;
+    --overlay:rgba(0,0,0,.5); --on-st:#14201F; --out-bar:#3F4B50; --on-out:#B5C0C3; --shadow:0 1px 2px rgba(0,0,0,.25),0 6px 18px rgba(0,0,0,.2);
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#1D2629; --surface:#242F33; --surface-2:#2B373B; --line:#38464B; --ink:#D3DCDE; --muted:#93A2A6;
+  --accent:#7AB3AE; --accent-ink:#152422; --accent-soft:#2C403F; --brass:#CDAE73;
+  --st-booked:#9DB8E6; --st-booked-bg:#3D5A88; --st-in:#97D0AC; --st-in-bg:#3B6A50;
+  --st-out:#AEB8BB; --st-out-bg:#46535A; --st-late:#F0A49D; --st-late-bg:#844A47;
+  --st-noshow:#E6BD8E; --st-noshow-bg:#735A38; --st-block:#B4BEC1; --st-block-bg:#4A565B;
+  --hk-sach:#8DBC9F; --hk-ban:#DB958F; --hk-dangdon:#D4B577; --hk-chokiem:#B3A5D6; --hk-baotri:#A3AEB1;
+  --overlay:rgba(0,0,0,.5); --on-st:#14201F; --out-bar:#3F4B50; --on-out:#B5C0C3; --shadow:0 1px 2px rgba(0,0,0,.25),0 6px 18px rgba(0,0,0,.2);
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:14px;line-height:1.45;-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit;color:inherit}
+h1,h2,h3{font-family:var(--f-display);margin:0;text-wrap:balance;letter-spacing:-.01em}
+h2{font-size:18px} h3{font-size:15px}
+.num,time,.t{font-variant-numeric:tabular-nums}
+.app{max-width:1440px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:10px 40px}
+@media (max-width:720px){.app{padding-block:8px 104px}}
+.muted{color:var(--muted)} .small{font-size:12px} .grow{flex:1 1 auto}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.stack{display:flex;flex-direction:column;gap:10px}
+.hidden{display:none!important}
+
+/* thanh trên */
+.top{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding-block:4px 10px}
+.brand{display:flex;align-items:center;gap:8px;font-family:var(--f-display);font-weight:700;font-size:20px}
+.brand svg{color:var(--accent)}
+.who{display:flex;align-items:center;gap:8px}
+.avatar{width:32px;height:32px;border-radius:50%;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;font-weight:700}
+.who-name{line-height:1.15} .who-name small{display:block;color:var(--muted);font-size:11px;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media (max-width:520px){.who-name small{display:none}.top{gap:8px}}
+
+input,select,textarea{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:7px 10px;min-height:38px;min-width:0}
+textarea{min-height:70px;resize:vertical;width:100%}
+input[type=checkbox],input[type=radio]{min-height:0;width:18px;height:18px;accent-color:var(--accent)}
+label.f{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted);font-weight:500;min-width:0}
+label.f > input,label.f > select,label.f > textarea{color:var(--ink);font-size:14px;font-weight:400}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+@media (max-width:520px){.grid2,.grid3{grid-template-columns:1fr}}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:6px 12px;min-height:36px;cursor:pointer;font-weight:500;white-space:nowrap;text-decoration:none}
+.btn:hover{border-color:var(--accent)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.btn.danger{color:var(--st-late)}
+.btn.danger.solid{background:var(--st-late);border-color:var(--st-late);color:var(--surface)}
+.btn.ghost{background:transparent;border-color:transparent}
+.btn.ghost:hover{background:var(--surface-2)}
+.btn.big{min-height:46px;padding:8px 16px;font-size:15px;font-weight:600}
+.btn.sm{min-height:30px;padding:3px 9px;font-size:13px}
+.btn.on{background:var(--accent-soft);border-color:var(--accent);color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+.banner{display:flex;gap:10px;align-items:center;flex-wrap:wrap;background:var(--surface-2);border:1px dashed var(--line);border-radius:10px;padding:8px 12px;margin-bottom:10px;font-size:13px}
+.banner b{color:var(--brass)}
+
+/* tab */
+.tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);margin-bottom:14px;overflow-x:auto;scrollbar-width:none}
+.tab{display:flex;align-items:center;gap:7px;background:none;border:0;border-bottom:2px solid transparent;padding:9px 12px;cursor:pointer;color:var(--muted);font-weight:500;white-space:nowrap}
+.tab svg{width:18px;height:18px}
+.tab[aria-current="page"]{color:var(--accent);border-bottom-color:var(--accent);font-weight:600}
+@media (max-width:720px){
+  .tabs{position:fixed;left:0;right:0;bottom:0;z-index:30;background:var(--surface);border-top:1px solid var(--line);border-bottom:0;margin:0;justify-content:space-around;
+    padding:4px max(6px,env(safe-area-inset-right,0px)) calc(4px + env(safe-area-inset-bottom,0px)) max(6px,env(safe-area-inset-left,0px))}
+  .tab{flex-direction:column;gap:2px;font-size:11px;padding:6px 6px;border:0;border-radius:8px;min-width:58px}
+  .tab[aria-current="page"]{background:var(--accent-soft)}
+}
+
+/* thẻ, ô số */
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px}
+.sec-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:18px 0 8px}
+.sec-head:first-child{margin-top:0}
+.tiles{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px;margin-bottom:14px}
+@media (max-width:900px){.tiles{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.tile{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px;cursor:default}
+.tile b{display:block;font-family:var(--f-display);font-size:26px;line-height:1.1;font-variant-numeric:tabular-nums}
+.tile span{font-size:12px;color:var(--muted)}
+.tile.warn b{color:var(--st-late)}
+.tile.go{cursor:pointer} .tile.go:hover{border-color:var(--accent)}
+.cols{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+@media (max-width:900px){.cols{grid-template-columns:1fr}}
+.list{display:flex;flex-direction:column}
+.li{display:flex;align-items:center;gap:10px;padding:10px 4px;border-top:1px solid var(--line);min-width:0}
+.li:first-child{border-top:0}
+.li .when{font-family:var(--f-display);font-weight:700;font-size:17px;min-width:52px;font-variant-numeric:tabular-nums}
+.li .main{flex:1;min-width:0}
+.li .main b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.li.click{cursor:pointer} .li.click:hover{background:var(--surface-2)}
+.empty{padding:18px;text-align:center;color:var(--muted);border:1px dashed var(--line);border-radius:10px}
+
+.pill{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;padding:2px 8px;border-radius:99px;white-space:nowrap;background:var(--surface-2);color:var(--muted)}
+.pill::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
+.pill.plain::before{display:none}
+.hk-sach{color:var(--hk-sach)} .hk-ban{color:var(--hk-ban)} .hk-dangdon{color:var(--hk-dangdon)} .hk-chokiem{color:var(--hk-chokiem)} .hk-baotri{color:var(--hk-baotri)}
+.pill.hk-sach{background:color-mix(in srgb,var(--hk-sach) 14%,transparent)}
+.pill.hk-ban{background:color-mix(in srgb,var(--hk-ban) 14%,transparent)}
+.pill.hk-dangdon{background:color-mix(in srgb,var(--hk-dangdon) 16%,transparent)}
+.pill.hk-chokiem{background:color-mix(in srgb,var(--hk-chokiem) 14%,transparent)}
+.pill.hk-baotri{background:color-mix(in srgb,var(--hk-baotri) 16%,transparent)}
+.pill.st-booked{color:var(--st-booked);background:var(--st-booked-bg)}
+.pill.st-in{color:var(--st-in);background:var(--st-in-bg)}
+.pill.st-out{color:var(--st-out);background:var(--st-out-bg)}
+.pill.st-late{color:var(--st-late);background:var(--st-late-bg)}
+.pill.st-noshow{color:var(--st-noshow);background:var(--st-noshow-bg)}
+.pill.st-cancel{color:var(--st-out);background:var(--st-out-bg)}
+.pill.st-block{color:var(--st-block);background:var(--st-block-bg)}
+.chip{display:inline-block;font-size:11px;font-weight:600;padding:1px 7px;border-radius:6px;background:var(--surface-2);color:var(--muted);white-space:nowrap}
+.chip.house{background:var(--accent-soft);color:var(--accent)}
+.rtag{display:inline-grid;place-items:center;min-width:44px;height:30px;padding:0 6px;border-radius:7px;background:var(--surface-2);font-family:var(--f-display);font-weight:700;font-size:15px}
+.red{color:var(--st-late)} .late-text{color:var(--st-late);font-weight:600}
+
+/* lịch */
+.cal-tools{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:8px}
+.cal-tools .range{font-family:var(--f-display);font-weight:700;font-size:16px;min-width:150px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--surface)}
+.seg button{border:0;background:none;padding:6px 10px;cursor:pointer;min-height:34px;color:var(--muted);font-weight:500}
+.seg button.on{background:var(--accent-soft);color:var(--accent);font-weight:600}
+.legend{display:flex;gap:10px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-bottom:8px}
+.legend{color:var(--ink)}
+.legend i{display:inline-block;width:18px;height:12px;border-radius:3px;margin-right:5px;vertical-align:-2px}
+.cal-scroll{overflow:auto;max-height:72vh;border:1px solid var(--line);border-radius:12px;background:var(--surface);overscroll-behavior:contain}
+.cal-inner{position:relative}
+.cal-head{position:sticky;top:0;z-index:6;display:flex;background:var(--surface);border-bottom:1px solid var(--line)}
+.cal-corner{position:sticky;left:0;z-index:7;flex:0 0 var(--namew);background:var(--surface);border-right:1px solid var(--line);padding:6px 8px;font-size:11px;color:var(--muted)}
+.cal-day{flex:0 0 auto;text-align:center;padding:5px 0;font-size:12px;color:var(--muted);border-left:1px solid var(--line);line-height:1.2;overflow:hidden;white-space:nowrap}
+.cal-day b{display:block;color:var(--ink);font-size:13px;font-variant-numeric:tabular-nums}
+.cal-day.today{background:var(--accent-soft);color:var(--accent)} .cal-day.today b{color:var(--accent)}
+.cal-day.wkend b{color:var(--brass)}
+.cal-group{position:sticky;left:0;display:inline-block;padding:8px 10px 4px;font-family:var(--f-display);font-weight:700;font-size:13px;color:var(--accent)}
+.cal-grouprow{border-top:1px solid var(--line);background:var(--surface-2)}
+.cal-row{display:flex;height:var(--rowh);border-top:1px solid var(--line)}
+.cal-subrow{display:flex;align-items:center;height:28px;border-top:1px solid var(--line);background:color-mix(in srgb,var(--accent-soft) 45%,var(--surface))}
+.cal-sub,.list-sub{position:sticky;left:0;padding:0 10px;font-size:12px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.05em;white-space:nowrap}
+.list-sub{display:block;padding:12px 4px 4px;border-top:1px solid var(--line)}
+.list-sub:first-child{border-top:0;padding-top:0}
+.cal-name{position:sticky;left:0;z-index:5;flex:0 0 var(--namew);display:flex;align-items:center;gap:7px;padding:0 8px;background:var(--surface);border-right:1px solid var(--line);min-width:0}
+.cal-name b{font-family:var(--f-display);font-size:15px}
+.cal-name small{display:block;color:var(--muted);font-size:10.5px;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dot{width:9px;height:9px;border-radius:50%;flex:0 0 auto;background:currentColor}
+.track{position:relative;flex:0 0 auto;cursor:cell}
+.today-col{position:absolute;top:0;bottom:0;background:var(--accent-soft);opacity:.35;pointer-events:none;z-index:0}
+.now-line{position:absolute;top:0;bottom:0;width:2px;background:var(--st-late);opacity:.85;z-index:4;pointer-events:none}
+.now-line::before{content:attr(data-t);position:absolute;top:2px;left:1px;transform:translateX(-50%);background:var(--st-late);color:var(--surface);font-size:10px;font-weight:700;padding:1px 4px;border-radius:4px}
+.bar{position:absolute;top:6px;height:calc(var(--rowh) - 12px);border-radius:6px;padding:0 7px;display:flex;align-items:center;font-size:12px;font-weight:600;overflow:hidden;cursor:pointer;z-index:2;user-select:none;-webkit-user-select:none;color:var(--on-st)}
+.bar .bar-t{overflow:hidden;white-space:nowrap;text-overflow:ellipsis;min-width:0}
+.bar .bar-t small{color:inherit;font-weight:400;opacity:.88}
+.bar:hover{box-shadow:var(--shadow);filter:brightness(1.06)}
+.bar.st-booked{background:var(--st-booked)}
+.bar.st-in{background:var(--st-in)}
+.bar.st-out{background:var(--out-bar);color:var(--on-out);font-weight:500}
+.bar.st-late{background:var(--st-late);animation:blink 2.6s ease-in-out infinite}
+.bar.st-noshow{background:var(--st-noshow)}
+.bar.st-cancel{background:transparent;border:1px dashed var(--st-out);color:var(--muted);text-decoration:line-through}
+.bar.st-block{background:repeating-linear-gradient(-45deg,var(--st-block) 0 7px,color-mix(in srgb,var(--st-block) 80%,var(--surface)) 7px 12px)}
+.bar.dim{opacity:.25} .bar.hit{outline:2px solid var(--brass)}
+.bar.dragging{opacity:.85;pointer-events:none;z-index:9;box-shadow:var(--shadow)}
+.bar-grip{position:absolute;right:0;top:0;bottom:0;width:9px;cursor:ew-resize}
+.bar-grip::after{content:"";position:absolute;right:3px;top:30%;bottom:30%;width:2px;border-radius:2px;background:currentColor;opacity:.35}
+@keyframes blink{50%{filter:brightness(1.18)}}
+@media (prefers-reduced-motion: reduce){.bar.st-late{animation:none}}
+.daylist .li{align-items:flex-start}
+
+/* dọn phòng */
+.hk-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px}
+@media (max-width:520px){.hk-grid{grid-template-columns:1fr}}
+.hk-card{display:flex;gap:12px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px;min-width:0}
+.hk-card.c1{border-color:color-mix(in srgb,var(--st-late) 45%,var(--line))}
+.hk-card.is-red{border:2px solid color-mix(in srgb,var(--st-late) 70%,var(--line));background:color-mix(in srgb,var(--st-late) 5%,var(--surface))}
+.keytag{flex:0 0 66px;display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 4px 10px;border-radius:12px 12px 18px 18px;background:var(--surface-2);border-top:5px solid currentColor;height:max-content}
+.keytag .hole{width:10px;height:10px;border-radius:50%;border:2px solid var(--line);margin-bottom:2px;background:var(--surface)}
+.keytag b{font-family:var(--f-display);font-size:24px;line-height:1;color:var(--ink)}
+.keytag small{font-size:10.5px;color:var(--muted)}
+.hk-body{flex:1;min-width:0;display:flex;flex-direction:column;gap:5px}
+.hk-line{font-size:13px;display:flex;gap:6px;align-items:baseline;flex-wrap:wrap}
+.hk-line .k{color:var(--muted);min-width:0}
+.hk-line .v{font-weight:600;font-variant-numeric:tabular-nums}
+.countdown{font-weight:700;padding:1px 7px;border-radius:6px;background:var(--surface-2);font-variant-numeric:tabular-nums}
+.countdown.red{background:var(--st-late-bg);color:var(--st-late);box-shadow:inset 0 0 0 1px var(--st-late)}
+.hk-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
+.hk-group-title{display:flex;align-items:center;gap:8px;margin:18px 0 8px;font-family:var(--f-display);font-weight:700;font-size:15px}
+.hk-group-title .count{font-family:var(--f-body);font-size:12px;font-weight:600;color:var(--muted);background:var(--surface-2);padding:1px 8px;border-radius:99px}
+.prio{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:6px;font-size:12px;font-weight:700;background:var(--surface-2);color:var(--muted)}
+.prio.p1{background:var(--st-late);color:var(--surface)} .prio.p2{background:var(--st-late-bg);color:var(--st-late)}
+
+/* bảng */
+.tbl-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{padding:8px 10px;border-top:1px solid var(--line);text-align:left;vertical-align:middle}
+thead th{border-top:0;font-size:12px;color:var(--muted);font-weight:600;background:var(--surface-2);white-space:nowrap}
+td.c,th.c{text-align:center}
+.cellbtn{background:none;border:1px dashed var(--line);border-radius:7px;padding:4px 8px;cursor:pointer;min-width:96px;font-size:12px}
+.cellbtn:hover{border-color:var(--accent)}
+.cellbtn.has{border-style:solid;background:var(--accent-soft);color:var(--accent);font-weight:600}
+.rbar{height:10px;border-radius:5px;background:var(--accent);min-width:0}
+.tile b{overflow-wrap:anywhere}
+
+/* nhà */
+.house-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px}
+.house-card{display:flex;flex-direction:column;gap:10px}
+.house-card h3{font-size:17px}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:3px 12px;font-size:13px}
+.kv dt{color:var(--muted)} .kv dd{margin:0;font-variant-numeric:tabular-nums}
+.room-chips{display:flex;gap:4px;flex-wrap:wrap}
+
+/* hộp thoại */
+.modal-back{position:fixed;inset:0;background:var(--overlay);display:flex;align-items:center;justify-content:center;z-index:50;padding:16px}
+.modal{background:var(--surface);border-radius:14px;width:100%;max-width:580px;max-height:92vh;overflow:auto;box-shadow:var(--shadow);display:flex;flex-direction:column}
+.modal.wide{max-width:860px}
+.modal-h{display:flex;align-items:center;gap:8px;padding:14px 16px 10px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--surface);z-index:2}
+.modal-b{padding:14px 16px;display:flex;flex-direction:column;gap:12px}
+.modal-f{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;padding:12px 16px calc(12px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--line);position:sticky;bottom:0;background:var(--surface)}
+@media (max-width:620px){.modal-back{align-items:flex-end;padding:0}.modal{border-radius:16px 16px 0 0;max-height:94vh}}
+.err{background:var(--st-late-bg);color:var(--st-late);border-radius:8px;padding:8px 10px;font-size:13px;font-weight:500}
+.note{background:var(--surface-2);border-radius:8px;padding:8px 10px;font-size:13px;color:var(--muted)}
+.money{display:grid;grid-template-columns:1fr auto;gap:4px 12px;font-variant-numeric:tabular-nums}
+.money .tot{font-weight:700;font-size:16px;border-top:1px solid var(--line);padding-top:6px}
+.checks{display:flex;flex-wrap:wrap;gap:6px}
+.checks label{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:8px;padding:5px 9px;cursor:pointer;font-size:13px}
+.checks label.dis{opacity:.45;cursor:not-allowed}
+
+.toast-box{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom,0px));z-index:60;display:flex;flex-direction:column;gap:6px;align-items:center;pointer-events:none;width:min(92vw,520px)}
+.toast{background:var(--ink);color:var(--bg);padding:9px 14px;border-radius:10px;font-size:13px;box-shadow:var(--shadow);text-align:center}
+.toast.bad{background:var(--st-late);color:#fff}
+body.busy{cursor:progress}
+body.busy::after{content:"Đang lưu…";position:fixed;top:calc(8px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);z-index:70;background:var(--ink);color:var(--bg);font-size:12px;font-weight:600;padding:5px 12px;border-radius:99px;box-shadow:var(--shadow)}
+
+/* đăng nhập */
+.login{max-width:440px;margin:6vh auto 0;display:flex;flex-direction:column;gap:14px}
+.login .card{display:flex;flex-direction:column;gap:12px}
+.demo-acc{display:flex;align-items:center;gap:10px;width:100%;text-align:left;border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:9px 11px;cursor:pointer}
+.demo-acc:hover{border-color:var(--accent)}
+.demo-acc span{flex:1;min-width:0} .demo-acc small{display:block;color:var(--muted)}
+</style>
+
+<div class="app" id="app"></div>
+<div id="modal"></div>
+<div class="toast-box" id="toasts"></div>
+
+<script>
+'use strict';
+/* ====== tiện ích ====== */
+const $ = s => document.querySelector(s);
+const MIN = 60000, HOUR = 3600000, DAY = 86400000;
+const KEY = 'sophong-v1', UIKEY = 'sophong-ui-v1';
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-3);
+const pad = n => String(n).padStart(2, '0');
+const sod = t => { const d = new Date(t); d.setHours(0,0,0,0); return d.getTime(); };
+const fT = t => { const d = new Date(t); return pad(d.getHours()) + ':' + pad(d.getMinutes()); };
+const fD = t => { const d = new Date(t); return pad(d.getDate()) + '/' + pad(d.getMonth()+1); };
+const fDY = t => fD(t) + '/' + new Date(t).getFullYear();
+const WD = ['CN','T2','T3','T4','T5','T6','T7'];
+const fDT = t => { const today = sod(Date.now()), d = sod(t); const lbl = d === today ? 'hôm nay' : d === today + DAY ? 'mai' : d === today - DAY ? 'hôm qua' : fD(t); return fT(t) + ' ' + lbl; };
+const money = n => Math.round(n || 0).toLocaleString('vi-VN') + 'đ';
+const toInput = t => { const d = new Date(t); return d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate()) + 'T' + pad(d.getHours()) + ':' + pad(d.getMinutes()); };
+const fromInput = s => s ? new Date(s).getTime() : NaN;
+const atTime = (day, hm) => { const [h, m] = String(hm || '00:00').split(':').map(Number); return sod(day) + h*HOUR + m*MIN; };
+const dur = ms => { const tm = Math.round(Math.abs(ms) / MIN), h = Math.floor(tm / 60), m = tm % 60; return h ? (m ? h + 'g' + pad(m) + 'p' : h + 'g') : m + 'p'; };
+const r10 = t => Math.round(t / (10*MIN)) * 10*MIN;
+async function sha(s){ try{ const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s)); return [...new Uint8Array(b)].map(x => x.toString(16).padStart(2,'0')).join(''); }catch(e){ let h=0; for(const c of s) h=(h*31+c.charCodeAt(0))|0; return 'x'+h; } }
+const ICON = {
+  key:'<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2" width="12" height="20" rx="5"/><circle cx="12" cy="7" r="1.6"/><path d="M9.5 13h5M9.5 16.5h5"/></svg>',
+  today:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>',
+  cal:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4M7 14h6"/></svg>',
+  hk:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3l-4 9M6 12h10l2 9H4z"/><path d="M9 16v5M13 16v5"/></svg>',
+  houses:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M3 21V9l7-5 7 5v12z"/><path d="M17 21h4V12l-4-3M8 21v-5h4v5"/></svg>',
+  users:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.6 3.4-5.5 6.5-5.5s5.7 1.9 6.5 5.5"/><circle cx="17.5" cy="9" r="2.5"/><path d="M17.5 14c2.3 0 3.6 1.5 4 4"/></svg>',
+  settings:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>',
+  report:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 21h18"/><rect x="5" y="11" width="3" height="7" rx="1"/><rect x="10.5" y="6" width="3" height="12" rx="1"/><rect x="16" y="13" width="3" height="5" rx="1"/></svg>',
+  log:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 6h13M8 12h13M8 18h13"/><circle cx="3.5" cy="6" r="1"/><circle cx="3.5" cy="12" r="1"/><circle cx="3.5" cy="18" r="1"/></svg>',
+};
+
+/* ====== quyền ====== */
+const ACTS = { xem:'Xem', them:'Thêm', sua:'Sửa', xoa:'Xóa' };
+const MODULES = [
+  { k:'lich', n:'Lịch phòng', a:['xem','them','sua','xoa'] },
+  { k:'datphong', n:'Đặt / nhận / trả phòng', a:['xem','them','sua','xoa'] },
+  { k:'donphong', n:'Dọn phòng', a:['xem','sua'] },
+  { k:'kiemtra', n:'Kiểm tra phòng (duyệt Sạch)', a:['sua'] },
+  { k:'khach', n:'Thông tin khách (tên, SĐT)', a:['xem','them','sua','xoa'] },
+  { k:'tien', n:'Giá phòng và tiền thu', a:['xem','them','sua','xoa'] },
+  { k:'caidat', n:'Cài đặt nhà, phòng, giá', a:['xem','them','sua','xoa'] },
+  { k:'nhatky', n:'Nhật ký hoạt động', a:['xem'] },
+];
+const tpl = spec => Object.fromEntries(MODULES.map(m => [m.k, Object.fromEntries(m.a.map(a => [a, spec === '*' || !!(spec[m.k] && spec[m.k].includes(a))]))]));
+const ROLES = {
+  quanly:     { n:'Quản lý nhà', d:'Toàn quyền trong nhà, trừ xóa nhà và phân quyền', p:() => tpl('*') },
+  letan:      { n:'Lễ tân', d:'Lịch, đặt phòng, khách, thu tiền', p:() => tpl({ lich:['xem','them','sua'], datphong:['xem','them','sua'], donphong:['xem'], khach:['xem','them','sua'], tien:['xem','them'] }) },
+  buongphong: { n:'Buồng phòng', d:'Chỉ dọn phòng, không thấy tên khách, SĐT, giá', p:() => tpl({ donphong:['xem','sua'] }) },
+  ketoan:     { n:'Kế toán', d:'Chỉ xem tiền và lịch', p:() => tpl({ lich:['xem'], datphong:['xem'], tien:['xem'], nhatky:['xem'] }) },
+};
+function roleOf(p){ if (!p) return null; const s = JSON.stringify(p); for (const [k, r] of Object.entries(ROLES)) if (JSON.stringify(r.p()) === s) return k; return 'custom'; }
+const roleName = p => { const k = roleOf(p); return !k ? '' : k === 'custom' ? 'Tùy chỉnh' : ROLES[k].n; };
+
+/* ====== trạng thái ====== */
+let S = null, ui = null, me = null;
+const defaultUI = () => ({ view:'today', house:'all', calDays:7, calStart: sod(Date.now()) - DAY, calMode:'grid', listDay: sod(Date.now()), q:'', floor:'', showCancel:false, hkMine:false, hkShowClean:false, logHouse:'', scrollNow:true, theme:'', repP:'month', repFrom:'', repTo:'' });
+/* ====== nói chuyện với máy chủ (Google Apps Script) ====== */
+const TOKKEY = 'sophong-token';
+let TOKEN = '', busy = false;
+const BOOT = { needsSetup:false, err:'' };
+/*
+ * Nhớ đăng nhập. iPhone (Safari) chặn bộ nhớ của trang Apps Script, nên mã đăng nhập được giữ ở 2 chỗ:
+ * bộ nhớ trình duyệt (máy tính, Android) và ngay trong link (?t=...). Thêm app ra màn hình chính
+ * SAU KHI đăng nhập thì biểu tượng mang theo mã này, mở lại không phải đăng nhập.
+ */
+function saveTok(){
+  try { if (TOKEN) localStorage.setItem(TOKKEY, TOKEN); else localStorage.removeItem(TOKKEY); } catch(e){}
+  if (!API_URL) try { google.script.history.replace(null, TOKEN ? { t: TOKEN } : {}, ''); } catch(e){}
+}
+function urlToken(){
+  if (API_URL) return Promise.resolve('');
+  return new Promise(res => {
+    try { google.script.url.getLocation(loc => res((loc && loc.parameter && loc.parameter.t) || '')); setTimeout(() => res(''), 3000); }
+    catch(e){ res(''); }
+  });
+}
+function savePrefs(){ if (me && S) call('setPrefs', { theme: ui.theme }, { optimistic: true }); }
+/*
+ * Hai cách nói chuyện với máy chủ:
+ * - Bản GitHub Pages: file config.js đặt window.SOPHONG_API = link web app (…/exec), gửi bằng fetch.
+ * - Bản chạy thẳng trên Apps Script: dùng google.script.run.
+ */
+const API_URL = (window.SOPHONG_API || '').trim();
+async function rpcFetch(action, payload){
+  try {
+    const r = await fetch(API_URL, { method:'POST', headers:{ 'Content-Type':'text/plain;charset=utf-8' }, body: JSON.stringify({ action, token: TOKEN, payload: payload || {} }) });
+    if (!r.ok) return { err:'Máy chủ báo lỗi ' + r.status + '. Thử lại sau ít phút.' };
+    return (await r.json()) || { err:'Máy chủ không trả lời.' };
+  } catch (e) { return { err:'Mất kết nối tới máy chủ. Kiểm tra mạng rồi thử lại.' }; }
+}
+function rpc(action, payload){
+  if (API_URL) return rpcFetch(action, payload);
+  return new Promise(res => {
+    try {
+      google.script.run
+        .withSuccessHandler(r => res(r || { err:'Máy chủ không trả lời.' }))
+        .withFailureHandler(e => res({ err:'Mất kết nối tới máy chủ. Kiểm tra mạng rồi thử lại. (' + (e && e.message || e) + ')' }))
+        .api(action, TOKEN, payload || {});
+    } catch (e) { res({ err:'Chưa có link máy chủ. Mở file config.js trên GitHub và dán link web app (…/exec) vào.' }); }
+  });
+}
+function applyData(d){
+  const logs = S && S.logs; S = d; if (!d.logs) S.logs = logs; me = d.me;
+  const th = me && me.prefs && me.prefs.theme;
+  if (th !== undefined && th !== ui.theme){ ui.theme = th; applyTheme(); saveUI(); }
+}
+function signOut(msg){ TOKEN = ''; saveTok(); S = null; me = null; closeModal(); render(); if (msg) toast(msg, true); }
+async function loadLogs(){ const r = await rpc('getLogs'); if (r.logs && S){ S.logs = r.logs; if (ui.view === 'log' && !$('#modal').childElementCount) render(); } }
+async function reload(){ const r = await rpc('getData'); if (r.auth) return signOut(r.err); if (r.data){ applyData(r.data); if (!$('#modal').childElementCount && !drag) render(); } }
+/* Các lệnh lưu chạy lần lượt theo hàng đợi: bấm liên tiếp không bị mất lệnh nào. */
+let queue = Promise.resolve(), pending = 0;
+function call(action, payload, opts = {}){
+  pending++; busy = true; document.body.classList.add('busy');
+  const btns = [...document.querySelectorAll('#modal button[type=submit]')]; btns.forEach(b => b.disabled = true);
+  const p = queue.then(async () => {
+    const r = await rpc(action, payload);
+    pending--; if (!pending){ busy = false; document.body.classList.remove('busy'); }
+    btns.forEach(b => b.disabled = false);
+    if (r.auth){ signOut(r.err); return false; }
+    if (r.err){ if (opts.err && $('#' + opts.err)) errBox(opts.err, esc(r.err)); else { toast(r.err, true); if (opts.optimistic) reload(); } return false; }
+    if (!pending){ applyData(r.data); if (!opts.keepModal) closeModal(); if (!drag && (!$('#modal').childElementCount || !opts.keepModal)) render(); }
+    else if (!opts.optimistic) closeModal();
+    if (r.msg) toast(r.msg);
+    if (opts.after) opts.after(r);
+    return r;
+  });
+  queue = p.catch(() => {});
+  return p;
+}
+async function signIn(action, payload, errId){
+  if (busy) return; busy = true; document.body.classList.add('busy');
+  const r = await rpc(action, payload);
+  busy = false; document.body.classList.remove('busy');
+  if (r.err) return errBox(errId, esc(r.err));
+  TOKEN = r.token; saveTok(); applyData(r.data); BOOT.needsSetup = false;
+  ui.view = action === 'setup' ? 'settings' : 'today'; ui.house = 'all'; ui.scrollNow = true; render();
+  if (action === 'setup') toast('Đã tạo tài khoản Chủ. Olie Home đã có sẵn, hãy kiểm tra giờ và giá trong Cài đặt.');
+}
+function save(){ saveUI(); }
+function saveUI(){ try { localStorage.setItem(UIKEY, JSON.stringify({ ...ui, session: me ? me.id : null })); } catch(e){} }
+function can(hid, mod, act = 'xem'){ if (!me) return false; if (me.isOwner) return true; const p = me.perms[hid]; return !!(p && p[mod] && p[mod][act]); }
+const myHouses = () => S.houses.filter(h => !h.archived && (me.isOwner || me.perms[h.id]));
+const selHouses = () => { const hs = myHouses(); return ui.house === 'all' ? hs : hs.filter(h => h.id === ui.house); };
+const housesWith = (mod, act = 'xem') => selHouses().filter(h => can(h.id, mod, act));
+const H = id => S.houses.find(h => h.id === id);
+const RM = (h, id) => h && h.rooms.find(r => r.id === id);
+const typeOf = (h, r) => h.types.find(t => t.id === r.typeId) || h.types[0];
+const BKIND = { dem:'Theo đêm', gio:'Theo giờ', quadem:'Qua đêm', khoa:'Khóa phòng' };
+const SOURCES = ['Trực tiếp','Điện thoại','Zalo','Booking','Agoda','Airbnb','Traveloka','Khác'];
+const METHODS = ['Tiền mặt','Chuyển khoản','Quẹt thẻ','OTA đã thu'];
+const HK = { sach:'Sạch', ban:'Bẩn', dangdon:'Đang dọn', chokiem:'Chờ kiểm tra', baotri:'Bảo trì' };
+const isActive = b => b.status !== 'cancelled' && b.status !== 'noshow';
+const overdue = b => b.status === 'inhouse' && Date.now() > b.co;
+function span(b){ const now = Date.now(); const s = b.aci || b.ci; let e = b.co; if (b.status === 'checkedout') e = b.aco || b.co; else if (b.status === 'inhouse' && now > b.co) e = now; return [s, e]; }
+function conflicts(c){ const [s, e] = span(c); return S.bookings.filter(o => o.id !== c.id && o.roomId === c.roomId && isActive(o)).filter(o => { const [os, oe] = span(o); return s < oe && os < e; }); }
+function stCls(b){ if (b.kind === 'khoa') return 'st-block'; if (b.status === 'cancelled') return 'st-cancel'; if (b.status === 'noshow') return 'st-noshow'; if (b.status === 'checkedout') return 'st-out'; if (overdue(b)) return 'st-late'; if (b.status === 'inhouse') return 'st-in'; return 'st-booked'; }
+function stName(b){ if (b.kind === 'khoa') return 'Khóa phòng'; return { booked:'Đã đặt', inhouse: overdue(b) ? 'Quá giờ trả' : 'Đang ở', checkedout:'Đã trả phòng', cancelled:'Đã hủy', noshow:'Không đến' }[b.status]; }
+function priceFor(h, r, kind, ci, co){
+  const t = typeOf(h, r); if (!t || !(co > ci)) return 0;
+  if (kind === 'gio'){
+    const hrs = Math.max(1, Math.ceil((co - ci) / HOUR - 0.001));
+    const p = hrs <= 2 ? t.h2 : hrs === 3 ? t.h3 : t.h3 + (hrs - 3) * t.hourNext;
+    return t.night ? Math.min(p, t.night) : p;
+  }
+  if (kind === 'quadem') return t.overnight;
+  return Math.max(1, Math.round((sod(co) - sod(ci)) / DAY)) * t.night;
+}
+const paidOf = b => (b.deposit || 0) + (b.payments || []).reduce((s, p) => s + p.amt, 0);
+const guestName = b => can(b.houseId, 'khach') ? (b.guest.name || 'Khách lẻ') : 'Khách';
+function toast(msg, bad){ const el = document.createElement('div'); el.className = 'toast' + (bad ? ' bad' : ''); el.textContent = msg; $('#toasts').appendChild(el); setTimeout(() => el.remove(), bad ? 5200 : 3400); }
+const hName = id => (H(id) || {}).name || '—';
+
+/* ====== khung chính ====== */
+const app = $('#app');
+function visibleTabs(){
+  const hs = selHouses(), any = m => hs.some(h => can(h.id, m)), t = [];
+  if (any('datphong')) t.push({ k:'today', n:'Hôm nay' });
+  if (any('lich')) t.push({ k:'cal', n:'Lịch phòng' });
+  if (any('donphong')) t.push({ k:'hk', n:'Dọn phòng' });
+  if (any('tien')) t.push({ k:'report', n:'Báo cáo' });
+  if (me.isOwner || any('caidat')) t.push({ k:'houses', n:'Nhà & phòng' });
+  if (me.isOwner) t.push({ k:'users', n:'Người dùng' });
+  if (me.isOwner || any('caidat')) t.push({ k:'settings', n:'Cài đặt' });
+  if (any('nhatky')) t.push({ k:'log', n:'Nhật ký' });
+  return t;
+}
+function roleLine(){
+  if (me.isOwner) return 'Chủ — toàn quyền';
+  const parts = myHouses().map(h => roleName(me.perms[h.id]) + ' · ' + h.name);
+  return parts.join(' / ') || 'Chưa được cấp nhà nào';
+}
+function render(){
+  if (!S || !me){ app.innerHTML = BOOT.needsSetup ? vSetup() : vLogin(); return; }
+  const sc = $('.cal-scroll'); if (sc && !ui.scrollNow){ ui.calSL = sc.scrollLeft; ui.calST = sc.scrollTop; }
+  const hs = myHouses();
+  if (ui.house !== 'all' && !hs.find(h => h.id === ui.house)) ui.house = 'all';
+  const tabs = visibleTabs();
+  if (!tabs.find(t => t.k === ui.view)) ui.view = tabs[0] ? tabs[0].k : 'none';
+  const opts = (hs.length > 1 ? `<option value="all"${ui.house === 'all' ? ' selected' : ''}>${me.isOwner ? 'Tất cả nhà' : 'Tất cả nhà của tôi'}</option>` : '')
+    + hs.map(h => `<option value="${h.id}"${ui.house === h.id ? ' selected' : ''}>${esc(h.name)}</option>`).join('');
+  app.innerHTML = `
+  <header class="top">
+    <div class="brand">${ICON.key}<span>Sổ Phòng</span></div>
+    ${hs.length ? `<select id="houseSel" data-chg="house" aria-label="Chọn nhà">${opts}</select>` : ''}
+    <div class="grow"></div>
+    <button class="btn ghost sm" data-act="theme" title="Đổi giao diện sáng/tối">${ui.theme === 'dark' ? 'Sáng' : ui.theme === 'light' ? 'Tối' : 'Sáng/Tối'}</button>
+    <div class="who"><div class="avatar">${esc(me.name[0] || '?')}</div><div class="who-name"><b>${esc(me.name)}</b><small>${esc(roleLine())}</small></div></div>
+    <button class="btn sm" data-act="logout">Đăng xuất</button>
+  </header>
+  ${S.sample ? `<div class="banner"><span><b>Bản xem trước · dữ liệu mẫu.</b> Thay đổi chỉ lưu trên máy này. Bản thật sẽ lưu trên Google Sheet để mọi người dùng chung.</span><span class="grow"></span><button class="btn sm" data-act="resetSample">Đặt lại dữ liệu mẫu</button>${me.isOwner ? '<button class="btn sm danger" data-act="clearSample">Xóa dữ liệu mẫu</button>' : ''}</div>` : ''}
+  <nav class="tabs">${tabs.map(t => `<button class="tab" data-act="view" data-v="${t.k}"${ui.view === t.k ? ' aria-current="page"' : ''}>${ICON[t.k]}<span>${t.n}</span></button>`).join('')}</nav>
+  <main id="main">${(VIEWS[ui.view] || vNone)()}</main>`;
+  const sc2 = $('.cal-scroll');
+  if (sc2){
+    if (ui.scrollNow){ const x = (Date.now() - ui.calStart) / HOUR * (DAYW[ui.calDays] / 24) - 140; sc2.scrollLeft = Math.max(0, x); ui.scrollNow = false; }
+    else { sc2.scrollLeft = ui.calSL || 0; sc2.scrollTop = ui.calST || 0; }
+  }
+  saveUI();
+}
+const vNone = () => `<div class="empty">Tài khoản của bạn chưa được cấp quyền xem mục nào ở nhà này. Hãy nhờ Chủ cấp quyền.</div>`;
+
+/* ====== đăng nhập ====== */
+function vSetup(){
+  return `<div class="login">
+    <div class="brand">${ICON.key}<span>Sổ Phòng</span></div>
+    <form class="card" data-form="setup">
+      <h2>Tạo tài khoản Chủ</h2>
+      <p class="muted small">Đây là tài khoản chính, có toàn quyền: thêm và xóa nhà, tạo tài khoản nhân viên, cấp quyền. Chỉ có một tài khoản Chủ.</p>
+      <label class="f">Mã khởi tạo (trong Google Sheet: menu Sổ Phòng → 1. Khởi tạo)<input id="s-code" required inputmode="numeric" maxlength="6" autocomplete="off"></label>
+      <label class="f">Tên hiển thị<input id="s-name" required maxlength="40" value="Chủ nhà"></label>
+      <label class="f">Tên đăng nhập<input id="s-user" required maxlength="30" autocomplete="username" pattern="[a-z0-9._]+" title="Chữ thường không dấu, số, dấu chấm"></label>
+      <label class="f">Mã PIN 6 số<input id="s-pin" required inputmode="numeric" pattern="\\d{6}" maxlength="6" autocomplete="new-password"></label>
+      <div class="err hidden" id="s-err"></div>
+      <button class="btn primary big" type="submit">Tạo tài khoản Chủ</button>
+    </form></div>`;
+}
+function vLogin(){
+  const demo = S && S.sample ? S.users.filter(u => !u.locked).map(u => `<button class="demo-acc" data-act="demoLogin" data-id="${u.id}"><div class="avatar">${esc(u.name[0])}</div><span><b>${esc(u.name)}</b><small>${esc(u.isOwner ? 'Chủ — toàn quyền mọi nhà' : S.houses.filter(h => u.perms[h.id] && !h.archived).map(h => roleName(u.perms[h.id]) + ' · ' + h.name).join(' / ') || 'Chưa được cấp nhà')}</small></span></button>`).join('') : '';
+  return `<div class="login">
+    <div class="brand">${ICON.key}<span>Sổ Phòng</span></div>
+    <form class="card" data-form="login">
+      <h2>Đăng nhập</h2>
+      <label class="f">Tên đăng nhập<input id="l-user" required autocomplete="username"></label>
+      <label class="f">Mã PIN<input id="l-pin" required inputmode="numeric" maxlength="6" type="password" autocomplete="current-password"></label>
+      <div class="err hidden" id="l-err"></div>
+      <button class="btn primary big" type="submit">Đăng nhập</button>
+    </form>
+    ${demo ? `<div class="card"><h3>Thử nhanh bằng tài khoản mẫu</h3><p class="muted small">Mỗi tài khoản có quyền khác nhau, để bạn thấy mỗi người chỉ xem được phần được cấp. Mã PIN mẫu của mọi tài khoản là 123456.</p>${demo}</div>` : ''}
+  </div>`;
+}
+
+/* ====== HÔM NAY ====== */
+function vToday(){
+  const hs = housesWith('datphong'), ids = new Set(hs.map(h => h.id)), now = Date.now(), E = sod(now) + DAY;
+  const bs = S.bookings.filter(b => ids.has(b.houseId));
+  const inhouse = bs.filter(b => b.status === 'inhouse');
+  const arrivals = bs.filter(b => b.status === 'booked' && b.ci < E).sort((a, b) => a.ci - b.ci);
+  const departures = inhouse.filter(b => b.co < E && !overdue(b)).sort((a, b) => a.co - b.co);
+  const over = inhouse.filter(overdue).sort((a, b) => a.co - b.co);
+  const blocks = bs.filter(b => b.kind === 'khoa' && b.status === 'block' && b.ci <= now && b.co > now);
+  const rooms = hs.flatMap(h => h.rooms.map(r => ({ h, r })));
+  const free = rooms.filter(({ r }) => !inhouse.some(b => b.roomId === r.id) && !blocks.some(b => b.roomId === r.id) && r.hk !== 'baotri');
+  const hkH = hs.filter(h => can(h.id, 'donphong'));
+  const dirty = hkItems(hkH).filter(i => i.cat <= 2);
+  const multi = hs.length > 1;
+  const roomCell = b => { const h = H(b.houseId), r = RM(h, b.roomId); return `<span class="rtag">${esc(r ? r.name : '?')}</span>`; };
+  const hc = b => multi ? `<span class="chip house">${esc(hName(b.houseId))}</span> ` : '';
+  const arrRow = b => { const h = H(b.houseId), r = RM(h, b.roomId), late = b.ci < now; return `<div class="li click" data-act="openBk" data-id="${b.id}">
+      <div class="when">${fT(b.ci)}</div>${roomCell(b)}
+      <div class="main"><b>${esc(guestName(b))}</b><span class="small muted">${hc(b)}${BKIND[b.kind]} · ${esc(b.source)}${late ? ` · <span class="late-text">trễ ${dur(now - b.ci)}</span>` : ''}${r && r.hk !== 'sach' ? ` · <span class="${'hk-' + r.hk}">phòng ${HK[r.hk].toLowerCase()}</span>` : ''}</span></div>
+      ${can(b.houseId, 'datphong', 'sua') ? `<button class="btn sm primary" data-act="checkin" data-id="${b.id}">Nhận phòng</button>` : ''}</div>`; };
+  const depRow = (b, isOver) => `<div class="li click" data-act="openBk" data-id="${b.id}">
+      <div class="when ${isOver ? 'red' : ''}">${fT(b.co)}</div>${roomCell(b)}
+      <div class="main"><b>${esc(guestName(b))}</b><span class="small muted">${hc(b)}${BKIND[b.kind]} · ${isOver ? `<span class="late-text">quá giờ ${dur(now - b.co)}</span>` : 'còn ' + dur(b.co - now)}</span></div>
+      ${can(b.houseId, 'datphong', 'sua') ? `<button class="btn sm" data-act="extend" data-id="${b.id}">Gia hạn</button><button class="btn sm" data-act="checkout" data-id="${b.id}">Trả phòng</button>` : ''}</div>`;
+  const sum = multi ? `<div class="sec-head"><h2>Theo từng nhà</h2></div><div class="tbl-wrap"><table><thead><tr><th>Nhà</th><th class="c">Phòng trống</th><th class="c">Đang có khách</th><th class="c">Khách đến</th><th class="c">Khách trả</th><th class="c">Quá giờ trả</th><th class="c">Cần dọn</th></tr></thead><tbody>${hs.map(h => {
+      const f = x => x.filter(b => b.houseId === h.id).length;
+      return `<tr><td><b>${esc(h.name)}</b></td><td class="c num">${free.filter(x => x.h.id === h.id).length}/${h.rooms.length}</td><td class="c num">${f(inhouse)}</td><td class="c num">${f(arrivals)}</td><td class="c num">${f(departures)}</td><td class="c num ${f(over) ? 'red' : ''}">${f(over)}</td><td class="c num">${dirty.filter(i => i.h.id === h.id).length}</td></tr>`; }).join('')}</tbody></table></div>` : '';
+  if (!hs.length) return `<div class="empty">Chưa có nhà nào. Vào mục “Nhà & phòng” để thêm nhà đầu tiên.</div>`;
+  return `
+  <div class="sec-head"><h2>Hôm nay, ${WD[new Date(now).getDay()]} ${fDY(now)}</h2><span class="muted small">cập nhật lúc ${fT(now)} · tự làm mới mỗi 30 giây</span><span class="grow"></span>
+    ${hs.some(h => can(h.id, 'datphong', 'them')) ? '<button class="btn primary" data-act="newBk">+ Đặt phòng</button>' : ''}</div>
+  <div class="tiles">
+    <div class="tile"><b>${free.length}<small class="muted" style="font-size:14px">/${rooms.length}</small></b><span>Phòng trống bây giờ</span></div>
+    <div class="tile"><b>${inhouse.length}</b><span>Đang có khách</span></div>
+    <div class="tile"><b>${arrivals.length}</b><span>Khách sắp đến</span></div>
+    <div class="tile"><b>${departures.length}</b><span>Khách sắp trả</span></div>
+    <div class="tile ${over.length ? 'warn' : ''}"><b>${over.length}</b><span>Quá giờ trả</span></div>
+    <div class="tile ${dirty.length ? 'warn' : ''} ${hkH.length ? 'go' : ''}" ${hkH.length ? 'data-act="view" data-v="hk"' : ''}><b>${dirty.length}</b><span>Phòng cần dọn${hkH.length ? ' →' : ''}</span></div>
+  </div>
+  ${over.length ? `<div class="card" style="border-color:var(--st-late);margin-bottom:14px"><div class="sec-head" style="margin-top:0"><h3 class="red">Quá giờ trả phòng</h3></div><div class="list">${over.map(b => depRow(b, true)).join('')}</div></div>` : ''}
+  <div class="cols">
+    <div class="card"><div class="sec-head" style="margin-top:0"><h3>Khách sắp đến</h3><span class="muted small">xếp theo giờ nhận</span></div>
+      <div class="list">${arrivals.map(arrRow).join('') || '<div class="empty">Hôm nay không còn khách đến.</div>'}</div></div>
+    <div class="card"><div class="sec-head" style="margin-top:0"><h3>Khách sắp trả phòng</h3><span class="muted small">xếp theo giờ trả</span></div>
+      <div class="list">${departures.map(b => depRow(b, false)).join('') || '<div class="empty">Hôm nay không còn khách trả phòng.</div>'}</div></div>
+  </div>
+  ${sum}`;
+}
+
+/* ====== LỊCH ====== */
+const DAYW = { 1:1152, 7:132, 14:80, 30:46 };
+const NAMEW = 104, ROWH = 46;
+function vCal(){
+  const hs = housesWith('lich'); if (!hs.length) return vNone();
+  const days = ui.calDays, start = ui.calStart, end = start + days*DAY;
+  const canAdd = hs.some(h => can(h.id, 'datphong', 'them'));
+  const canBlock = hs.some(h => can(h.id, 'lich', 'them'));
+  const floors = [...new Set(hs.flatMap(h => h.rooms.map(r => r.floor)))].sort((a, b) => a - b);
+  const rangeLbl = days === 1 ? `${WD[new Date(start).getDay()]} ${fDY(start)}` : `${fD(start)} – ${fDY(end - DAY)}`;
+  const tools = `<div class="cal-tools">
+    <div class="seg"><button data-act="calMove" data-d="-1" aria-label="Lùi">‹</button><button data-act="calToday">Hôm nay</button><button data-act="calMove" data-d="1" aria-label="Tới">›</button></div>
+    <span class="range">${rangeLbl}</span>
+    <div class="seg">${[1,7,14,30].map(d => `<button data-act="calDays" data-d="${d}" class="${days === d ? 'on' : ''}">${d === 1 ? '1 ngày' : d + ' ngày'}</button>`).join('')}</div>
+    <div class="seg"><button data-act="calMode" data-m="grid" class="${ui.calMode === 'grid' ? 'on' : ''}">Lưới</button><button data-act="calMode" data-m="list" class="${ui.calMode === 'list' ? 'on' : ''}">Danh sách</button></div>
+    <input id="calQ" data-inp="calQ" placeholder="Tìm tên, SĐT, mã đặt" value="${esc(ui.q)}" style="width:190px" aria-label="Tìm lượt đặt">
+    <select data-chg="floor" aria-label="Lọc tầng"><option value="">Mọi tầng</option>${floors.map(f => `<option value="${f}"${String(ui.floor) === String(f) ? ' selected' : ''}>Tầng ${f}</option>`).join('')}</select>
+    <label class="row small muted" style="gap:5px"><input type="checkbox" data-chg="showCancel" ${ui.showCancel ? 'checked' : ''}>Hiện lượt đã hủy</label>
+    <span class="grow"></span>
+    ${canBlock ? '<button class="btn" data-act="newBlock">Khóa phòng</button>' : ''}
+    ${canAdd ? '<button class="btn primary" data-act="newBk">+ Đặt phòng</button>' : ''}
+  </div>
+  <div class="legend"><span><i style="background:var(--st-booked)"></i>Đã đặt</span><span><i style="background:var(--st-in)"></i>Đang ở</span><span><i style="background:var(--st-late)"></i>Quá giờ trả</span><span><i style="background:var(--out-bar)"></i>Đã trả</span><span><i style="background:var(--st-noshow)"></i>Không đến</span><span><i style="background:repeating-linear-gradient(-45deg,var(--st-block) 0 4px,color-mix(in srgb,var(--st-block) 80%,var(--surface)) 4px 7px)"></i>Khóa phòng</span>
+   <span>·</span>${Object.entries(HK).map(([k, v]) => `<span class="hk-${k}"><span class="dot" style="display:inline-block;margin-right:4px"></span><span class="muted">${v}</span></span>`).join('')}
+   <span class="muted">· Kéo thả thanh để đổi phòng hoặc ngày, kéo mép phải để gia hạn (trên máy tính)</span></div>`;
+  if (ui.calMode === 'list') return tools + vCalList(hs);
+  const dayW = DAYW[days], pph = dayW / 24, W = days * dayW, now = Date.now(), T = sod(now);
+  let head = `<div class="cal-head"><div class="cal-corner">Phòng</div>`;
+  if (days === 1){ for (let h = 0; h < 24; h++) head += `<div class="cal-day" style="width:${pph}px"><b>${pad(h)}h</b></div>`; }
+  else for (let i = 0; i < days; i++){ const d = start + i*DAY, wd = new Date(d).getDay(); head += `<div class="cal-day ${d === T ? 'today' : ''} ${wd === 0 || wd === 6 ? 'wkend' : ''}" style="width:${dayW}px">${WD[wd]}<b>${days === 30 ? new Date(d).getDate() : fD(d)}</b></div>`; }
+  head += '</div>';
+  const q = ui.q.trim().toLowerCase();
+  const bg = days === 1 ? `background-image:linear-gradient(to right,var(--line) 1px,transparent 1px);background-size:${pph}px 100%` : `background-image:linear-gradient(to right,var(--line) 1px,transparent 1px);background-size:${dayW}px 100%`;
+  let rows = '';
+  for (const h of hs){
+    const rooms = h.rooms.filter(r => ui.floor === '' || String(r.floor) === String(ui.floor));
+    if (!rooms.length) continue;
+    if (hs.length > 1) rows += `<div class="cal-grouprow" style="width:${NAMEW + W}px"><span class="cal-group">${esc(h.name)}</span></div>`;
+    const dragOK = can(h.id, 'lich', 'sua');
+    for (const r of groupRooms(h, rooms)){
+      if (r.sub){ rows += `<div class="cal-subrow" style="width:${NAMEW + W}px"><span class="cal-sub">${esc(r.sub)} · ${r.n} phòng</span></div>`; continue; }
+      const bars = S.bookings.filter(b => b.roomId === r.id && (ui.showCancel || b.status !== 'cancelled')).map(b => {
+        const [s, e] = span(b); if (e <= start || s >= end) return '';
+        const left = Math.max(0, (s - start) / HOUR * pph), right = Math.min(W, (e - start) / HOUR * pph), w = Math.max(6, right - left);
+        const nm = b.kind === 'khoa' ? 'Khóa · ' + (b.note || 'bảo trì') : guestName(b);
+        const tt = b.kind === 'khoa' ? '' : ` <small>${fT(b.aci || b.ci)}→${fT(b.status === 'checkedout' ? b.aco : b.co)}</small>`;
+        const hay = (b.guest.name + ' ' + b.guest.phone + ' ' + b.otaCode).toLowerCase();
+        const qc = q ? (can(b.houseId, 'khach') && hay.includes(q) ? ' hit' : ' dim') : '';
+        const draggable = dragOK && (b.status === 'booked' || b.status === 'inhouse' || b.status === 'block');
+        const title = `${nm} · ${stName(b)} · ${fT(b.aci || b.ci)} ${fD(b.aci || b.ci)} → ${fT(b.status === 'checkedout' ? b.aco : b.co)} ${fD(b.status === 'checkedout' ? b.aco : b.co)}`;
+        return `<div class="bar ${stCls(b)}${qc}" data-act="openBk" data-id="${b.id}" ${draggable ? 'data-drag="1"' : ''} style="left:${left}px;width:${w}px" title="${esc(title)}"><span class="bar-t">${esc(nm)}${tt}</span>${draggable ? '<i class="bar-grip"></i>' : ''}</div>`;
+      }).join('');
+      const t = typeOf(h, r);
+      rows += `<div class="cal-row"><div class="cal-name"><span class="dot hk-${r.hk}" title="${HK[r.hk]}"></span><div style="min-width:0"><b>${esc(r.name)}</b><small>${esc(t ? t.name : '')} · T${r.floor}</small></div></div><div class="track" data-act="calNew" data-house="${h.id}" data-room="${r.id}" style="width:${W}px;${bg}">${bars}</div></div>`;
+    }
+  }
+  const todayCol = days > 1 && T >= start && T < end ? `<div class="today-col" style="left:${NAMEW + (T - start) / HOUR * pph}px;width:${dayW}px"></div>` : '';
+  const nowLine = now >= start && now < end ? `<div class="now-line" data-t="${fT(now)}" style="left:${NAMEW + (now - start) / HOUR * pph}px"></div>` : '';
+  return tools + `<div class="cal-scroll" style="--namew:${NAMEW}px;--rowh:${ROWH}px"><div class="cal-inner" style="width:${NAMEW + W}px">${head}<div style="position:relative">${todayCol}${nowLine}${rows || '<div class="empty" style="margin:12px">Không có phòng nào khớp bộ lọc.</div>'}</div></div></div>`;
+}
+const roomCmp = (a, b) => a.floor - b.floor || a.name.localeCompare(b.name, 'vi', { numeric:true });
+function groupRooms(h, rooms){
+  const out = [], known = new Set(h.types.map(t => t.id));
+  for (const t of h.types){ const l = rooms.filter(r => r.typeId === t.id).sort(roomCmp); if (l.length) out.push({ sub: t.name, n: l.length }, ...l); }
+  const rest = rooms.filter(r => !known.has(r.typeId)).sort(roomCmp);
+  if (rest.length) out.push({ sub:'Khác', n: rest.length }, ...rest);
+  return out;
+}
+function vCalList(hs){
+  const d0 = ui.listDay, d1 = d0 + DAY, q = ui.q.trim().toLowerCase();
+  let out = `<div class="row" style="margin-bottom:10px"><div class="seg"><button data-act="listMove" data-d="-1">‹</button><button data-act="listToday">Hôm nay</button><button data-act="listMove" data-d="1">›</button></div><b class="range" style="font-family:var(--f-display);font-size:16px">${WD[new Date(d0).getDay()]} ${fDY(d0)}</b></div>`;
+  for (const h of hs){
+    out += `<div class="card" style="margin-bottom:12px">${hs.length > 1 ? `<h3 style="margin-bottom:6px">${esc(h.name)}</h3>` : ''}<div class="list daylist">`;
+    for (const r of groupRooms(h, h.rooms.filter(r => ui.floor === '' || String(r.floor) === String(ui.floor)))){
+      if (r.sub){ out += `<div class="list-sub">${esc(r.sub)} · ${r.n} phòng</div>`; continue; }
+      const bs = S.bookings.filter(b => b.roomId === r.id && (ui.showCancel || b.status !== 'cancelled')).filter(b => { const [s, e] = span(b); return s < d1 && e > d0; }).filter(b => !q || (can(h.id, 'khach') && (b.guest.name + ' ' + b.guest.phone + ' ' + b.otaCode).toLowerCase().includes(q))).sort((a, b) => span(a)[0] - span(b)[0]);
+      out += `<div class="li"><span class="rtag">${esc(r.name)}</span><span class="dot hk-${r.hk}" title="${HK[r.hk]}" style="margin-top:10px"></span><div class="main stack" style="gap:4px">${bs.map(b => { const [s, e] = span(b); return `<div class="row click" data-act="openBk" data-id="${b.id}" style="cursor:pointer;gap:6px"><span class="pill ${stCls(b)}">${stName(b)}</span><b class="t">${fT(s)} ${sod(s) !== d0 ? fD(s) : ''} → ${fT(e)} ${sod(e) !== d0 ? fD(e) : ''}</b><span class="muted">${esc(b.kind === 'khoa' ? b.note : guestName(b))}</span></div>`; }).join('') || '<span class="muted">Trống</span>'}</div>
+        ${can(h.id, 'datphong', 'them') ? `<button class="btn sm" data-act="newBk" data-house="${h.id}" data-room="${r.id}" data-day="${d0}">+ Đặt</button>` : ''}</div>`;
+    }
+    out += `</div></div>`;
+  }
+  return out;
+}
+
+/* ====== DỌN PHÒNG ====== */
+const HKG = { 1:'Gấp — có khách nhận phòng hôm nay', 2:'Cần dọn — khách đã trả phòng', 3:'Sắp trả phòng (trong 2 giờ)', 4:'Khách đang ở — dọn hằng ngày', 5:'Chờ kiểm tra', 6:'Bảo trì', 7:'Sạch, sẵn sàng' };
+function hkItems(hs){
+  const now = Date.now(), T = sod(now), E = T + DAY, items = [];
+  for (const h of hs) for (const r of h.rooms){
+    const rb = S.bookings.filter(b => b.roomId === r.id);
+    const inb = rb.find(b => b.status === 'inhouse');
+    const lastOut = rb.filter(b => b.status === 'checkedout').sort((a, b) => b.aco - a.aco)[0];
+    const next = rb.filter(b => b.status === 'booked' && b.kind !== 'khoa' && b.ci > now - 12*HOUR).sort((a, b) => a.ci - b.ci)[0];
+    const arrToday = next && next.ci < E;
+    let cat, key = 0;
+    if (r.hk === 'baotri') cat = 6;
+    else if (r.hk === 'chokiem') { cat = 5; key = r.hkEnd || 0; }
+    else if (inb){
+      if (inb.co - now <= S.settings.prepH*HOUR){ cat = 3; key = inb.co; }
+      else if (!r.dnd && (r.hk !== 'sach' || (r.hkDoneAt || 0) < T)){ cat = 4; key = inb.co; }
+      else cat = 7;
+    }
+    else if (r.hk === 'ban' || r.hk === 'dangdon'){ if (arrToday){ cat = 1; key = next.ci; } else { cat = 2; key = lastOut ? lastOut.aco : 0; } }
+    else cat = 7;
+    const red = next && arrToday && r.hk !== 'sach' && next.ci - now < S.settings.redM*MIN;
+    items.push({ h, r, cat, key, inb, lastOut, next, arrToday, red });
+  }
+  return items.sort((a, b) => a.cat - b.cat || a.key - b.key || a.r.name.localeCompare(b.r.name));
+}
+function vHK(){
+  const hs = housesWith('donphong'); if (!hs.length) return vNone();
+  const now = Date.now(), T = sod(now);
+  let items = hkItems(hs);
+  if (ui.hkMine) items = items.filter(i => i.r.assignee === me.id);
+  const multi = hs.length > 1;
+  const staff = h => S.users.filter(u => !u.locked && (u.isOwner || (u.perms[h.id] && u.perms[h.id].donphong && u.perms[h.id].donphong.sua)));
+  const uname = id => (S.users.find(u => u.id === id) || {}).name || '—';
+  const card = it => {
+    const { h, r, inb, lastOut, next, red } = it, hid = h.id;
+    const canDo = can(hid, 'donphong', 'sua'), canCheck = can(hid, 'kiemtra', 'sua'), canAssign = me.isOwner || can(hid, 'caidat', 'sua');
+    const lines = [];
+    if (inb){ const od = now > inb.co; lines.push(`<div class="hk-line"><span class="k">Khách đang ở · trả lúc</span><span class="v ${od ? 'red' : ''}">${fDT(inb.co)}</span>${od ? `<span class="late-text">quá ${dur(now - inb.co)}</span>` : it.cat === 3 ? `<span class="countdown">còn ${dur(inb.co - now)}</span>` : ''}</div>`); }
+    else if (lastOut && lastOut.aco > T - 12*HOUR) lines.push(`<div class="hk-line"><span class="k">Khách đã trả phòng lúc</span><span class="v">${fDT(lastOut.aco)}</span><span class="muted small">(${dur(now - lastOut.aco)} trước)</span></div>`);
+    if (next) lines.push(`<div class="hk-line"><span class="k">Khách mới nhận phòng</span><span class="v">${fDT(next.ci)}</span>${it.arrToday ? `<span class="countdown ${red ? 'red' : ''}">${next.ci > now ? 'còn ' + dur(next.ci - now) : 'đã tới giờ'}</span>` : ''}${can(hid, 'khach') ? `<span class="muted small">${esc(next.guest.name)}</span>` : ''}</div>`);
+    if (r.hk === 'dangdon') lines.push(`<div class="hk-line"><span class="k">Đang dọn:</span><span class="v">${esc(uname(r.hkBy))}</span><span class="muted small">từ ${fT(r.hkStart)} (${dur(now - r.hkStart)})</span></div>`);
+    if (r.hk === 'chokiem') lines.push(`<div class="hk-line"><span class="k">Dọn xong lúc</span><span class="v">${fT(r.hkEnd)}</span><span class="muted small">bởi ${esc(uname(r.hkBy))} · ${dur(r.hkEnd - r.hkStart)}</span></div>`);
+    if (r.dnd && inb) lines.push(`<div class="hk-line"><span class="chip">Khách không muốn dọn</span></div>`);
+    if (r.hkNote) lines.push(`<div class="hk-line"><span class="k">Ghi chú:</span><span>${esc(r.hkNote)}</span></div>`);
+    const btn = [];
+    if (canDo){
+      if (r.hk === 'ban' || (it.cat === 4 && r.hk === 'sach')) btn.push(`<button class="btn primary big" data-act="hk" data-op="start" data-h="${hid}" data-r="${r.id}">Bắt đầu dọn</button>`);
+      if (r.hk === 'dangdon') btn.push(`<button class="btn primary big" data-act="hk" data-op="done" data-h="${hid}" data-r="${r.id}">Dọn xong</button>`);
+      if (r.hk === 'baotri') btn.push(`<button class="btn big" data-act="hk" data-op="fixed" data-h="${hid}" data-r="${r.id}">Đã sửa xong</button>`);
+      if (r.hk === 'sach' && it.cat === 7 && !inb) btn.push(`<button class="btn sm" data-act="hk" data-op="dirty" data-h="${hid}" data-r="${r.id}">Đánh dấu bẩn</button>`);
+    }
+    if (r.hk === 'chokiem'){
+      if (canCheck) btn.push(`<button class="btn primary big" data-act="hk" data-op="pass" data-h="${hid}" data-r="${r.id}">Đạt — Sạch</button><button class="btn big" data-act="hk" data-op="fail" data-h="${hid}" data-r="${r.id}">Chưa đạt</button>`);
+      else btn.push(`<span class="muted small">Chờ quản lý kiểm tra</span>`);
+    }
+    if (canDo && r.hk !== 'baotri') btn.push(`<button class="btn sm" data-act="hk" data-op="broken" data-h="${hid}" data-r="${r.id}">Báo hỏng</button>`);
+    if (canDo) btn.push(`<button class="btn sm ghost" data-act="hk" data-op="note" data-h="${hid}" data-r="${r.id}">Ghi chú</button>`);
+    if (canDo && inb) btn.push(`<button class="btn sm ghost" data-act="hk" data-op="dnd" data-h="${hid}" data-r="${r.id}">${r.dnd ? 'Bỏ “không dọn”' : 'Khách không muốn dọn'}</button>`);
+    const assign = canAssign ? `<label class="row small muted" style="gap:6px">Giao cho <select data-chg="assign" data-h="${hid}" data-r="${r.id}" style="min-height:30px;padding:3px 8px"><option value="">— Chưa giao —</option>${staff(h).map(u => `<option value="${u.id}"${r.assignee === u.id ? ' selected' : ''}>${esc(u.name)}</option>`).join('')}</select></label>` : (r.assignee ? `<span class="small muted">Giao cho: ${esc(uname(r.assignee))}</span>` : '');
+    return `<article class="hk-card c${it.cat} ${red ? 'is-red' : ''}">
+      <div class="keytag hk-${r.hk}"><span class="hole"></span><b>${esc(r.name)}</b><small>Tầng ${r.floor}</small></div>
+      <div class="hk-body">
+        <div class="row" style="gap:6px"><span class="pill hk-${r.hk}">${HK[r.hk]}</span>${multi ? `<span class="chip house">${esc(h.name)}</span>` : ''}${it.cat <= 2 ? `<span class="prio p${it.cat}" title="Mức ưu tiên">${it.cat}</span>` : ''}</div>
+        ${lines.join('')}
+        <div class="hk-actions">${btn.join('')}</div>
+        ${assign}
+      </div></article>`;
+  };
+  const groups = [1,2,3,4,5,6,7].map(c => ({ c, list: items.filter(i => i.cat === c) })).filter(g => g.list.length);
+  const need = items.filter(i => i.cat <= 2).length;
+  return `<div class="sec-head"><h2>Dọn phòng</h2><span class="muted small">${need ? `${need} phòng cần dọn · phòng gấp nhất đứng đầu` : 'Không có phòng nào cần dọn gấp'}</span><span class="grow"></span>
+      <button class="btn ${ui.hkMine ? 'on' : ''}" data-act="hkMine">Phòng của tôi</button></div>
+    ${groups.map(g => {
+      const collapsed = g.c === 7 && !ui.hkShowClean;
+      return `<div class="hk-group-title">${g.c <= 2 ? `<span class="prio p${g.c}">${g.c}</span>` : ''}${g.c === 3 ? `Sắp trả phòng (trong ${S.settings.prepH} giờ)` : HKG[g.c]}<span class="count">${g.list.length}</span>${g.c === 7 ? `<button class="btn sm ghost" data-act="hkClean">${collapsed ? 'Hiện' : 'Thu gọn'}</button>` : ''}</div>${collapsed ? '' : `<div class="hk-grid">${g.list.map(card).join('')}</div>`}`;
+    }).join('') || '<div class="empty">Không có phòng nào được giao cho bạn.</div>'}`;
+}
+
+/* ====== NHÀ & PHÒNG ====== */
+function vHouses(){
+  const hs = me.isOwner ? S.houses.filter(h => !h.archived) : myHouses().filter(h => can(h.id, 'caidat'));
+  const archived = me.isOwner ? S.houses.filter(h => h.archived) : [];
+  const now = Date.now();
+  const card = h => {
+    const future = S.bookings.filter(b => b.houseId === h.id && (b.status === 'booked' || b.status === 'inhouse') && b.kind !== 'khoa').length;
+    return `<div class="card house-card">
+      <div class="row"><h3 class="grow">${esc(h.name)}</h3><span class="chip">${h.rooms.length} phòng</span></div>
+      <dl class="kv"><dt>Địa chỉ</dt><dd>${esc(h.address || '—')}</dd><dt>Điện thoại</dt><dd>${esc(h.phone || '—')}</dd><dt>Giờ chuẩn</dt><dd>Nhận ${h.ci} · Trả ${h.co} · Qua đêm ${h.onIn}→${h.onOut}</dd>
+      ${can(h.id, 'tien') ? `<dt>Tài khoản</dt><dd>${esc(h.bank.name)} · ${esc(h.bank.acc)} · ${esc(h.bank.holder)}</dd><dt>Loại phòng</dt><dd>${h.types.map(t => `${esc(t.name)}: ${money(t.night)}/đêm, ${money(t.h2)} 2 giờ đầu`).join('<br>')}</dd>` : ''}
+      <dt>Đang có</dt><dd>${future} lượt đặt sắp tới hoặc khách đang ở</dd></dl>
+      <div class="room-chips">${h.rooms.map(r => `<span class="chip">${esc(r.name)}</span>`).join('')}</div>
+      <div class="row">${can(h.id, 'caidat', 'sua') ? `<button class="btn sm" data-act="editHouse" data-id="${h.id}">Sửa thông tin</button><button class="btn sm" data-act="editRooms" data-id="${h.id}">Sửa phòng</button>` : ''}
+      ${me.isOwner ? `<span class="grow"></span><button class="btn sm danger" data-act="archiveHouse" data-id="${h.id}">Xóa nhà</button>` : ''}</div></div>`;
+  };
+  return `<div class="sec-head"><h2>Nhà & phòng</h2><span class="grow"></span>${me.isOwner ? '<button class="btn primary" data-act="addHouse">+ Thêm nhà</button>' : ''}</div>
+    ${hs.length ? `<div class="house-grid">${hs.map(card).join('')}</div>` : '<div class="empty">Chưa có nhà nào. Bấm “+ Thêm nhà” để bắt đầu.</div>'}
+    ${archived.length ? `<div class="sec-head"><h2>Nhà đã lưu trữ</h2><span class="muted small">ẩn khỏi mọi màn hình, dữ liệu cũ vẫn giữ</span></div>
+      <div class="tbl-wrap"><table><thead><tr><th>Nhà</th><th>Lưu trữ lúc</th><th>Dữ liệu</th><th></th></tr></thead><tbody>${archived.map(h => `<tr><td><b>${esc(h.name)}</b></td><td class="num">${h.archivedAt ? fDT(h.archivedAt) : '—'}</td><td>${h.rooms.length} phòng · ${S.bookings.filter(b => b.houseId === h.id).length} lượt đặt</td><td class="row" style="justify-content:flex-end"><button class="btn sm" data-act="restoreHouse" data-id="${h.id}">Khôi phục</button><button class="btn sm danger solid" data-act="purgeHouse" data-id="${h.id}">Xóa vĩnh viễn</button></td></tr>`).join('')}</tbody></table></div>` : ''}`;
+}
+
+/* ====== NGƯỜI DÙNG ====== */
+function vUsers(){
+  if (!me.isOwner) return vNone();
+  const hs = S.houses.filter(h => !h.archived);
+  return `<div class="sec-head"><h2>Người dùng và phân quyền</h2><span class="grow"></span><button class="btn primary" data-act="addUser">+ Thêm nhân viên</button></div>
+  <p class="muted small" style="margin:0 0 10px">Mỗi ô là quyền của một người ở một nhà. Bấm vào ô để cấp hoặc sửa quyền. Nhà không được cấp sẽ bị ẩn hoàn toàn với người đó, kể cả tên nhà.</p>
+  <div class="tbl-wrap"><table><thead><tr><th>Người dùng</th>${hs.map(h => `<th class="c">${esc(h.name)}</th>`).join('')}<th></th></tr></thead><tbody>
+  ${S.users.map(u => `<tr>
+    <td><div class="row" style="gap:8px;flex-wrap:nowrap"><div class="avatar">${esc(u.name[0])}</div><div><b>${esc(u.name)}</b>${u.locked ? ' <span class="pill st-late plain">Đã khóa</span>' : ''}<div class="small muted">@${esc(u.username)}</div></div></div></td>
+    ${hs.map(h => u.isOwner ? `<td class="c"><span class="chip house">Chủ — toàn quyền</span></td>` : `<td class="c"><button class="cellbtn ${u.perms[h.id] ? 'has' : ''}" data-act="editPerms" data-id="${u.id}" data-h="${h.id}">${u.perms[h.id] ? esc(roleName(u.perms[h.id])) : '+ Cấp quyền'}</button></td>`).join('')}
+    <td><div class="row" style="justify-content:flex-end;flex-wrap:nowrap">${u.isOwner ? `<button class="btn sm" data-act="resetPin" data-id="${u.id}">Đổi PIN</button>` : `<button class="btn sm" data-act="editPerms" data-id="${u.id}">Sửa quyền</button><button class="btn sm" data-act="resetPin" data-id="${u.id}">Đặt lại PIN</button><button class="btn sm" data-act="lockUser" data-id="${u.id}">${u.locked ? 'Mở khóa' : 'Khóa'}</button><button class="btn sm danger" data-act="delUser" data-id="${u.id}">Xóa</button>`}</div></td>
+  </tr>`).join('')}</tbody></table></div>
+  <div class="sec-head"><h2>Mẫu vai trò</h2></div>
+  <div class="tbl-wrap"><table><thead><tr><th>Vai trò</th><th>Được làm gì</th></tr></thead><tbody>${Object.values(ROLES).map(r => `<tr><td><b>${r.n}</b></td><td>${r.d}</td></tr>`).join('')}</tbody></table></div>`;
+}
+
+/* ====== NHẬT KÝ ====== */
+function vLog(){
+  const hs = housesWith('nhatky'), ids = new Set(hs.map(h => h.id));
+  if (!S.logs) return '<div class="empty">Đang tải nhật ký…</div>';
+  const list = S.logs.filter(l => ids.has(l.houseId) && (!ui.logHouse || l.houseId === ui.logHouse)).slice(0, 300);
+  return `<div class="sec-head"><h2>Nhật ký hoạt động</h2><span class="grow"></span>${hs.length > 1 ? `<select data-chg="logHouse"><option value="">Mọi nhà</option>${hs.map(h => `<option value="${h.id}"${ui.logHouse === h.id ? ' selected' : ''}>${esc(h.name)}</option>`).join('')}</select>` : ''}</div>
+  <div class="card"><div class="list">${list.map(l => `<div class="li"><div class="when" style="font-size:14px;min-width:96px">${fDT(l.at)}</div><div class="main"><b style="white-space:normal">${esc(l.text)}</b><span class="small muted">${esc(l.userName)}${hs.length > 1 ? ' · ' + esc(hName(l.houseId)) : ''}</span></div></div>`).join('') || '<div class="empty">Chưa có hoạt động nào.</div>'}</div></div>`;
+}
+/* ====== CÀI ĐẶT ====== */
+function vSettings(){
+  const hs = me.isOwner ? selHouses() : selHouses().filter(h => can(h.id, 'caidat'));
+  const st = S.settings;
+  const timeCard = h => { const ed = can(h.id, 'caidat', 'sua'), dis = ed ? '' : 'disabled';
+    return `<form class="card stack" data-form="times" data-h="${h.id}">
+      <div class="row"><h3 class="grow">${esc(h.name)}</h3><span class="chip">${h.rooms.length} phòng</span></div>
+      <div class="grid2">
+        <label class="f">Giờ nhận phòng chuẩn<input type="time" name="ci" value="${h.ci}" required ${dis}></label>
+        <label class="f">Giờ trả phòng chuẩn<input type="time" name="co" value="${h.co}" required ${dis}></label>
+        <label class="f">Qua đêm: nhận từ<input type="time" name="onIn" value="${h.onIn}" required ${dis}></label>
+        <label class="f">Qua đêm: trả trước<input type="time" name="onOut" value="${h.onOut}" required ${dis}></label>
+      </div>
+      <p class="muted small" style="margin:0">Giờ chuẩn được điền sẵn khi đặt phòng mới, vẫn sửa được cho từng khách. Đổi giờ chuẩn không làm thay đổi các lượt đã đặt.</p>
+      ${ed ? `<div class="row">${me.isOwner && myHouses().length > 1 ? '<label class="row small"><input type="checkbox" name="all"> Áp cho tất cả nhà</label>' : ''}<span class="grow"></span><button class="btn primary" type="submit">Lưu giờ</button></div>` : ''}
+    </form>`; };
+  const priceCard = h => `<div class="card stack"><div class="row"><h3 class="grow">${esc(h.name)}</h3>${can(h.id, 'caidat', 'sua') ? `<button class="btn sm" data-act="editHouse" data-id="${h.id}">Sửa loại phòng & giá</button><button class="btn sm" data-act="editRooms" data-id="${h.id}">Sửa danh sách phòng</button>` : ''}</div>
+    <div class="tbl-wrap"><table><thead><tr><th>Loại phòng</th><th>Phòng</th>${can(h.id, 'tien') ? '<th>Giá 1 đêm</th><th>Qua đêm</th><th>2 giờ đầu</th><th>3 giờ đầu</th><th>Mỗi giờ sau</th>' : ''}</tr></thead><tbody>${h.types.map(t => `<tr><td><b>${esc(t.name)}</b></td><td>${h.rooms.filter(r => r.typeId === t.id).map(r => esc(r.name)).join(', ') || '—'}</td>${can(h.id, 'tien') ? ['night','overnight','h2','h3','hourNext'].map(k => `<td class="num">${t[k] ? money(t[k]) : '<span class="muted">chưa nhập</span>'}</td>`).join('') : ''}</tr>`).join('')}</tbody></table></div></div>`;
+  return `<div class="sec-head"><h2>Cài đặt</h2></div>
+    <div class="sec-head"><h2>Giờ nhận và trả phòng</h2></div>
+    ${hs.length ? `<div class="house-grid">${hs.map(timeCard).join('')}</div>` : '<div class="empty">Chưa có nhà nào.</div>'}
+    <div class="sec-head"><h2>Loại phòng và bảng giá</h2><span class="muted small">giá chỉ để tham khảo khi đặt phòng, tiền thu luôn nhập tay</span></div>
+    <div class="stack">${hs.map(priceCard).join('')}</div>
+    ${me.isOwner ? `<div class="sec-head"><h2>Nhận phòng và dọn phòng</h2></div>
+    <form class="card" data-form="hkset"><div class="grid2">
+      <label class="f">Báo “sắp trả phòng” trước (giờ)<input type="number" name="prepH" min="1" max="12" value="${st.prepH}" required></label>
+      <label class="f">Thẻ phòng chuyển đỏ khi khách mới đến trong (phút)<input type="number" name="redM" min="10" max="240" step="5" value="${st.redM}" required></label>
+      <label class="row" style="grid-column:1/-1"><input type="checkbox" name="autoIn" ${st.autoIn !== false ? 'checked' : ''}> Tự chuyển sang “Đang ở” khi đến giờ nhận phòng (không cần bấm Nhận phòng)</label>
+    </div><div class="row" style="margin-top:10px"><span class="grow"></span><button class="btn primary" type="submit">Lưu</button></div></form>` : ''}
+    <div class="sec-head"><h2>Giao diện trên máy này</h2></div>
+    <div class="card row"><span class="grow">Chế độ màu</span><div class="seg">${[['', 'Theo máy'], ['light', 'Sáng'], ['dark', 'Tối']].map(([v, n]) => `<button data-act="setTheme" data-v="${v}" class="${ui.theme === v ? 'on' : ''}">${n}</button>`).join('')}</div></div>`;
+}
+/* ====== BÁO CÁO DOANH THU ====== */
+function repRange(){
+  const T = sod(Date.now()), d = new Date(T), p = ui.repP || 'month';
+  if (p === 'today') return [T, T + DAY, 'Hôm nay ' + fDY(T)];
+  if (p === '7d') return [T - 6*DAY, T + DAY, '7 ngày qua (' + fD(T - 6*DAY) + ' – ' + fDY(T) + ')'];
+  if (p === 'lastmonth'){ const s = new Date(d.getFullYear(), d.getMonth() - 1, 1).getTime(), e = new Date(d.getFullYear(), d.getMonth(), 1).getTime(); return [s, e, 'Tháng ' + (new Date(s).getMonth() + 1) + '/' + new Date(s).getFullYear()]; }
+  if (p === 'custom' && ui.repFrom && ui.repTo){ const s = sod(new Date(ui.repFrom + 'T00:00').getTime()), e = sod(new Date(ui.repTo + 'T00:00').getTime()) + DAY; if (e > s) return [s, e, fDY(s) + ' – ' + fDY(e - DAY)]; }
+  const s = new Date(d.getFullYear(), d.getMonth(), 1).getTime(), e = new Date(d.getFullYear(), d.getMonth() + 1, 1).getTime();
+  return [s, e, 'Tháng ' + (d.getMonth() + 1) + '/' + d.getFullYear()];
+}
+const ymd = t => { const d = new Date(t); return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); };
+function vReport(){
+  const hs = housesWith('tien'); if (!hs.length) return vNone();
+  const [s, e, label] = repRange(), ids = new Set(hs.map(h => h.id)), multi = hs.length > 1;
+  const bs = S.bookings.filter(b => ids.has(b.houseId) && b.kind !== 'khoa');
+  const done = bs.filter(b => b.status === 'checkedout' && b.aco >= s && b.aco < e);
+  const revenue = done.reduce((a, b) => a + b.price, 0);
+  const cash = new Map(); let cashTotal = 0;
+  const addCash = (k, v, t) => { if (t >= s && t < e && v){ cash.set(k, (cash.get(k) || 0) + v); cashTotal += v; } };
+  bs.forEach(b => { addCash('Tiền cọc', b.deposit || 0, b.createdAt); (b.payments || []).forEach(p => addCash(p.method, p.amt, p.at)); });
+  const roomsN = hs.reduce((a, h) => a + h.rooms.length, 0);
+  let occ = 0; bs.filter(isActive).forEach(b => { const [a, z] = span(b), o = Math.min(z, e) - Math.max(a, s); if (o > 0) occ += o; });
+  const occPct = roomsN ? Math.min(100, occ / (roomsN * (e - s)) * 100) : 0;
+  const upcoming = bs.filter(b => (b.status === 'booked' || b.status === 'inhouse') && b.ci >= s && b.ci < e);
+  const debts = bs.filter(b => b.status === 'checkedout' && b.price - paidOf(b) > 0).sort((a, b) => b.aco - a.aco);
+  const debtTotal = debts.reduce((a, b) => a + b.price - paidOf(b), 0);
+  const roomLbl = b => { const h = H(b.houseId), r = RM(h, b.roomId); return (multi ? h.name + ' · ' : '') + 'P' + (r ? r.name : '?'); };
+  const typeLbl = b => { const h = H(b.houseId), r = RM(h, b.roomId); return (multi ? h.name + ' · ' : '') + (r ? typeOf(h, r).name : '?'); };
+  const group = fn => { const m = new Map(); done.forEach(b => { const k = fn(b), g = m.get(k) || { n:0, v:0 }; g.n++; g.v += b.price; m.set(k, g); }); return [...m.entries()].sort((a, b) => b[1].v - a[1].v); };
+  const table = (title, rows, col = 'Doanh thu') => `<div class="card"><h3 style="margin-bottom:8px">${title}</h3>${rows.length ? `<div class="tbl-wrap"><table><thead><tr><th></th><th class="c">Lượt</th><th style="text-align:right">${col}</th><th style="width:30%">Tỷ lệ</th></tr></thead><tbody>${rows.map(([k, g]) => `<tr><td>${esc(k)}</td><td class="c num">${g.n}</td><td class="num" style="text-align:right">${money(g.v)}</td><td><div class="rbar" style="width:${revenue ? Math.max(2, g.v / revenue * 100) : 0}%"></div></td></tr>`).join('')}</tbody></table></div>` : '<div class="empty">Chưa có lượt trả phòng trong kỳ này.</div>'}</div>`;
+  const days = []; if (e - s <= 62 * DAY) for (let t = s; t < e; t += DAY){ const t2 = sod(t + DAY + 2*HOUR); const v = done.filter(b => b.aco >= t && b.aco < t2).reduce((a, b) => a + b.price, 0); const n = done.filter(b => b.aco >= t && b.aco < t2).length; days.push({ t, v, n }); t = t2 - DAY; }
+  const maxDay = Math.max(1, ...days.map(x => x.v));
+  const presets = [['today','Hôm nay'],['7d','7 ngày'],['month','Tháng này'],['lastmonth','Tháng trước'],['custom','Tùy chọn']];
+  return `<div class="sec-head"><h2>Báo cáo doanh thu</h2><span class="muted small">${esc(label)}${multi ? ' · ' + hs.length + ' nhà' : ' · ' + esc(hs[0].name)}</span></div>
+  <div class="cal-tools"><div class="seg">${presets.map(([k, n]) => `<button data-act="repP" data-p="${k}" class="${(ui.repP || 'month') === k ? 'on' : ''}">${n}</button>`).join('')}</div>
+    ${ui.repP === 'custom' ? `<label class="row small muted" style="gap:6px">Từ <input type="date" data-chg="repFrom" value="${esc(ui.repFrom || ymd(s))}"></label><label class="row small muted" style="gap:6px">đến <input type="date" data-chg="repTo" value="${esc(ui.repTo || ymd(e - DAY))}"></label>` : ''}</div>
+  <div class="tiles">
+    <div class="tile"><b>${money(revenue)}</b><span>Doanh thu phòng (khách đã trả phòng)</span></div>
+    <div class="tile"><b>${money(cashTotal)}</b><span>Tiền đã thu trong kỳ</span></div>
+    <div class="tile"><b>${done.length}</b><span>Lượt khách trả phòng</span></div>
+    <div class="tile"><b>${done.length ? money(Math.round(revenue / done.length)) : '—'}</b><span>Trung bình mỗi lượt</span></div>
+    <div class="tile"><b>${occPct.toFixed(0)}%</b><span>Công suất phòng (${roomsN} phòng)</span></div>
+    <div class="tile ${debtTotal ? 'warn' : ''}"><b>${money(debtTotal)}</b><span>Còn phải thu (${debts.length} lượt)</span></div>
+  </div>
+  <p class="muted small" style="margin:0 0 12px">Doanh thu tính theo ngày khách trả phòng, bằng tiền phòng đã nhập trong đơn. Tiền đã thu tính theo ngày ghi nhận tiền cọc và các lần thu. Công suất tính cả lượt đã đặt trong kỳ.${upcoming.length ? ` Trong kỳ còn ${upcoming.length} lượt đang ở hoặc sắp đến, trị giá ${money(upcoming.reduce((a, b) => a + b.price, 0))}, chưa tính vào doanh thu.` : ''}</p>
+  ${days.length ? `<div class="card" style="margin-bottom:14px"><h3 style="margin-bottom:8px">Theo ngày</h3><div class="tbl-wrap"><table><thead><tr><th>Ngày</th><th class="c">Lượt trả</th><th style="text-align:right">Doanh thu</th><th style="width:45%"></th></tr></thead><tbody>${days.map(x => `<tr${sod(Date.now()) === x.t ? ' style="background:var(--accent-soft)"' : ''}><td class="num">${WD[new Date(x.t).getDay()]} ${fD(x.t)}</td><td class="c num">${x.n || ''}</td><td class="num" style="text-align:right">${x.v ? money(x.v) : '<span class="muted">—</span>'}</td><td><div class="rbar" style="width:${x.v ? Math.max(2, x.v / maxDay * 100) : 0}%"></div></td></tr>`).join('')}</tbody></table></div></div>` : ''}
+  <div class="cols" style="margin-bottom:14px">
+    <div class="card"><h3 style="margin-bottom:8px">Tiền đã thu theo cách trả</h3>${cash.size ? `<div class="money">${[...cash.entries()].sort((a, b) => b[1] - a[1]).map(([k, v]) => `<span>${esc(k)}</span><span class="${v < 0 ? 'red' : ''}">${money(v)}</span>`).join('')}<span class="tot">Tổng</span><span class="tot">${money(cashTotal)}</span></div>` : '<div class="empty">Chưa thu tiền trong kỳ này.</div>'}</div>
+    ${table('Theo nguồn đặt', group(b => b.source || 'Khác'))}
+    ${table('Theo loại phòng', group(typeLbl))}
+    ${table('Theo kiểu thuê', group(b => BKIND[b.kind] || b.kind))}
+  </div>
+  ${table('Theo phòng', group(roomLbl))}
+  <div class="sec-head"><h2>Còn phải thu</h2><span class="muted small">khách đã trả phòng nhưng chưa thu đủ, mọi thời điểm</span></div>
+  <div class="card"><div class="list">${debts.slice(0, 50).map(b => `<div class="li click" data-act="openBk" data-id="${b.id}"><div class="when" style="font-size:14px;min-width:96px">${fDT(b.aco)}</div><span class="rtag">${esc(RM(H(b.houseId), b.roomId)?.name || '?')}</span><div class="main"><b>${esc(guestName(b))}</b><span class="small muted">${multi ? esc(hName(b.houseId)) + ' · ' : ''}tiền phòng ${money(b.price)} · đã thu ${money(paidOf(b))}</span></div><b class="red num">${money(b.price - paidOf(b))}</b></div>`).join('') || '<div class="empty">Không có khoản nào còn nợ.</div>'}</div></div>`;
+}
+const VIEWS = { today: vToday, cal: vCal, hk: vHK, report: vReport, houses: vHouses, users: vUsers, settings: vSettings, log: vLog, none: vNone };
+
+/* ====== hộp thoại ====== */
+let modalState = null;
+function openModal(html, opts = {}){ $('#modal').innerHTML = `<div class="modal-back" data-act="modalBack"><div class="modal ${opts.wide ? 'wide' : ''}" role="dialog" aria-modal="true">${html}</div></div>`; const f = $('#modal [autofocus]') || $('#modal input:not([type=hidden]):not([disabled]), #modal select'); if (f && !opts.nofocus) setTimeout(() => { try { f.focus(); } catch(e){} }, 30); }
+function closeModal(){ $('#modal').innerHTML = ''; modalState = null; }
+const mHead = t => `<div class="modal-h"><h2 class="grow">${t}</h2><button class="btn ghost sm" type="button" data-act="close" aria-label="Đóng">✕</button></div>`;
+function confirmBox({ title, html, ok = 'Đồng ý', danger = false, typeText = '' }){
+  return new Promise(res => {
+    modalState = { confirmRes: res, typeText };
+    openModal(`<form data-form="confirm">${mHead(esc(title))}<div class="modal-b">${html}${typeText ? `<label class="f">Gõ đúng “${esc(typeText)}” để xác nhận<input id="cf-text" autocomplete="off" autofocus></label><div class="err hidden" id="cf-err"></div>` : ''}</div><div class="modal-f"><button class="btn" type="button" data-act="confirmNo">Thôi</button><button class="btn ${danger ? 'danger solid' : 'primary'}" type="submit">${esc(ok)}</button></div></form>`);
+  });
+}
+function errBox(id, msg){ const e = $('#' + id); if (!e) return toast(msg, true); e.innerHTML = msg; e.classList.remove('hidden'); }
+
+/* ---- đặt phòng ---- */
+function openBookingForm({ houseId, roomId, ci, bookingId }){
+  const b = bookingId ? S.bookings.find(x => x.id === bookingId) : null;
+  let hs = housesWith('datphong', b ? 'sua' : 'them');
+  if (b) hs = [H(b.houseId)];
+  if (!hs.length) return toast('Bạn không có quyền đặt phòng ở nhà này.', true);
+  const h = H(houseId || (b && b.houseId)) || hs[0];
+  const now = Date.now();
+  const kind = b ? b.kind : (ui.view === 'cal' && ui.calDays === 1 ? 'gio' : 'dem');
+  let ci0 = b ? b.ci : (ci || (sod(now) === sod(atTime(now, h.ci)) && now < atTime(now, h.ci) ? atTime(now, h.ci) : r10(now + 10*MIN)));
+  let co0 = b ? b.co : kind === 'gio' ? ci0 + 2*HOUR : atTime(ci0 + DAY, h.co);
+  if (!b && kind === 'dem' && ci) { ci0 = atTime(ci, h.ci); co0 = atTime(ci + DAY, h.co); }
+  modalState = { form:'booking', houseId: h.id, bookingId: b ? b.id : null, priceTouched: !!b, sel: new Set(b ? [b.roomId] : roomId ? [roomId] : []) };
+  const showGuest = can(h.id, 'khach', b ? 'sua' : 'them') || can(h.id, 'khach');
+  const showMoney = can(h.id, 'tien');
+  const inh = b && b.status === 'inhouse', done = b && b.status === 'checkedout';
+  openModal(`<form data-form="booking">${mHead(!b ? 'Đặt phòng mới' : done ? 'Sửa lượt đã trả phòng' : 'Sửa lượt đặt')}
+   <div class="modal-b">
+     ${!b && hs.length > 1 ? `<label class="f">Nhà<select id="f-house" data-chg="fHouse">${hs.map(x => `<option value="${x.id}"${x.id === h.id ? ' selected' : ''}>${esc(x.name)}</option>`).join('')}</select></label>` : `<div class="muted small">${esc(h.name)}</div>`}
+     <div class="grid3">
+       <label class="f">Kiểu thuê<select id="f-kind" data-chg="fKind">${['dem','gio','quadem'].map(k => `<option value="${k}"${kind === k ? ' selected' : ''}>${BKIND[k]}</option>`).join('')}</select></label>
+       <label class="f">${inh || done ? 'Giờ nhận đã đặt' : 'Giờ nhận phòng'}<input type="datetime-local" id="f-ci" data-chg="fTime" value="${toInput(ci0)}" ${inh || done ? 'disabled' : ''} required></label>
+       <label class="f">${done ? 'Giờ trả đã đặt' : 'Giờ trả phòng'}<input type="datetime-local" id="f-co" data-chg="fTime" value="${toInput(co0)}" ${done ? 'disabled' : ''} required></label>
+     </div>
+     ${inh || done ? `<div class="grid2"><label class="f">Giờ nhận thực tế (khách đến sớm/trễ thì sửa ở đây)<input type="datetime-local" id="f-aci" data-chg="fTime" value="${toInput(b.aci)}" required></label>${done ? `<label class="f">Giờ trả thực tế<input type="datetime-local" id="f-aco" data-chg="fTime" value="${toInput(b.aco)}" required></label>` : `<div class="note">Khách ở thêm: sửa “Giờ trả phòng” ở trên hoặc bấm “Gia hạn”.</div>`}</div><div class="small muted" id="f-diff"></div>` : ''}
+     <div class="f" style="gap:6px"><span class="small muted" style="font-weight:500">${b ? 'Phòng' : 'Chọn phòng (chọn nhiều phòng để đặt cho đoàn)'}</span><div class="checks" id="f-rooms"></div></div>
+     ${showGuest ? `<div class="grid2"><label class="f">Tên khách<input id="f-name" maxlength="60" value="${esc(b ? b.guest.name : '')}" ${b && !can(h.id, 'khach', 'sua') ? 'disabled' : ''}></label><label class="f">Số điện thoại<input id="f-phone" inputmode="tel" maxlength="20" value="${esc(b ? b.guest.phone : '')}" ${b && !can(h.id, 'khach', 'sua') ? 'disabled' : ''}></label></div>` : ''}
+     <div class="grid3">
+       <label class="f">Người lớn<input type="number" id="f-adults" min="1" max="20" value="${b ? b.guest.adults : 2}"></label>
+       <label class="f">Trẻ em<input type="number" id="f-children" min="0" max="20" value="${b ? b.guest.children : 0}"></label>
+       <label class="f">Nguồn đặt<select id="f-source">${SOURCES.map(s => `<option${(b ? b.source : 'Trực tiếp') === s ? ' selected' : ''}>${s}</option>`).join('')}</select></label>
+     </div>
+     <label class="f">Mã đặt phòng của OTA (nếu có, nhập tay)<input id="f-ota" maxlength="40" value="${esc(b ? b.otaCode : '')}"></label>
+     ${showMoney ? `<div class="grid2"><label class="f">Giá mỗi phòng (đồng)<input type="number" id="f-price" min="0" step="1000" data-inp="fPrice" value="${b ? b.price : ''}" placeholder="Nhập tiền phòng" ${b && !can(h.id, 'tien', 'sua') ? 'disabled' : ''}></label><label class="f">Tiền cọc mỗi phòng<input type="number" id="f-deposit" min="0" step="1000" value="${b ? b.deposit : 0}" ${b && !can(h.id, 'tien', 'sua') ? 'disabled' : ''}></label></div><div class="small muted" id="f-hint"></div>` : ''}
+     <label class="f">Ghi chú<textarea id="f-note" maxlength="300">${esc(b ? b.note : '')}</textarea></label>
+     <div class="err hidden" id="f-err"></div>
+   </div>
+   <div class="modal-f"><button class="btn" type="button" data-act="close">Thôi</button><button class="btn primary" type="submit">${b ? 'Lưu thay đổi' : 'Đặt phòng'}</button></div></form>`);
+  bookingRefresh();
+}
+function bookingRefresh(){
+  const ms = modalState; if (!ms || ms.form !== 'booking') return;
+  const h = H(ms.houseId), b = ms.bookingId ? S.bookings.find(x => x.id === ms.bookingId) : null;
+  const kind = $('#f-kind').value, f = readTimes(b), ci = f.aci || f.ci, co = f.aco || f.co;
+  const box = $('#f-rooms');
+  const diff = $('#f-diff');
+  if (diff){
+    const parts = [];
+    if (f.aci < b.ci - 15*MIN) parts.push(`Nhận sớm ${dur(b.ci - f.aci)}`); else if (f.aci > b.ci + 15*MIN) parts.push(`Nhận trễ ${dur(f.aci - b.ci)}`);
+    if (f.aco){ if (f.aco > f.co + 15*MIN) parts.push(`Trả muộn ${dur(f.aco - f.co)}`); else if (f.aco < f.co - 15*MIN) parts.push(`Trả sớm ${dur(f.co - f.aco)}`); }
+    diff.textContent = parts.length ? parts.join(' · ') + '. Tiền phụ thu (nếu có) bạn tự nhập vào ô tiền phòng.' : '';
+  }
+  box.innerHTML = h.rooms.map(r => {
+    const cand = { id: b ? b.id : 'new', roomId: r.id, houseId: h.id, ci: f.ci, co: f.co, status: b ? b.status : 'booked', aci: f.aci, aco: f.aco };
+    const busy = ci < co ? conflicts(cand).length > 0 : false;
+    const on = ms.sel.has(r.id);
+    return `<label class="${busy && !on ? 'dis' : ''}" title="${busy ? 'Đã có khách trong khoảng giờ này' : ''}"><input type="${b ? 'radio' : 'checkbox'}" name="f-room" value="${r.id}" data-chg="fRoom" ${on ? 'checked' : ''} ${busy && !on ? 'disabled' : ''}>${esc(r.name)}${busy ? ' <span class="small red">bận</span>' : ''}</label>`;
+  }).join('');
+  const p = $('#f-price');
+  if (p){
+    const first = [...ms.sel][0] ? RM(h, [...ms.sel][0]) : h.rooms[0];
+    const auto = first && co > ci ? priceFor(h, first, kind, ci, co) : 0;
+    ms.auto = auto;
+    const n = ms.sel.size || 1;
+    $('#f-hint').innerHTML = `Tiền phòng do bạn tự nhập, app không tự đổi. Giá tham khảo theo bảng giá: ${money(auto)}${!p.disabled && +p.value !== auto ? ` <button type="button" class="btn sm" data-act="useAutoPrice">Điền giá này</button>` : ''}${n > 1 ? ` · ${n} phòng, tổng ${money((+p.value || 0) * n)}` : ''}`;
+  }
+}
+function readTimes(b){
+  const g = id => { const e = $('#' + id); return e ? fromInput(e.value) : null; };
+  return { ci: g('f-ci'), co: g('f-co'), aci: $('#f-aci') ? g('f-aci') : (b ? b.aci : null), aco: $('#f-aco') ? g('f-aco') : (b ? b.aco : null) };
+}
+function saveBooking(){
+  const ms = modalState, h = H(ms.houseId), now = Date.now();
+  const b = ms.bookingId ? S.bookings.find(x => x.id === ms.bookingId) : null;
+  if (!can(h.id, 'datphong', b ? 'sua' : 'them')) return errBox('f-err', 'Bạn không có quyền này.');
+  const kind = $('#f-kind').value, f = readTimes(b), ci = f.ci, co = f.co;
+  const rooms = [...ms.sel];
+  if (!rooms.length) return errBox('f-err', 'Hãy chọn ít nhất một phòng.');
+  if ([ci, co, f.aci, f.aco].some(t => Number.isNaN(t))) return errBox('f-err', 'Hãy nhập đủ ngày giờ.');
+  if (!(co > (f.aci || ci))) return errBox('f-err', 'Giờ trả phòng phải sau giờ nhận phòng.');
+  if (f.aco && !(f.aco > f.aci)) return errBox('f-err', 'Giờ trả thực tế phải sau giờ nhận thực tế.');
+  if (f.aci && b && b.status === 'inhouse' && f.aci > Date.now() + 5*MIN) return errBox('f-err', 'Giờ nhận thực tế không thể sau thời điểm hiện tại.');
+  const clash = [];
+  for (const rid of rooms){
+    const cand = { id: b ? b.id : 'new', roomId: rid, houseId: h.id, ci, co, status: b ? b.status : 'booked', aci: f.aci, aco: f.aco };
+    for (const o of conflicts(cand)) clash.push(`Phòng ${esc(RM(h, rid).name)} trùng với ${o.kind === 'khoa' ? 'khóa phòng' : esc(guestName(o))} (${fDT(span(o)[0])} → ${fDT(span(o)[1])})`);
+  }
+  if (clash.length) return errBox('f-err', 'Không đặt được vì trùng lịch:<br>' + clash.join('<br>'));
+  const v = id => { const e = $('#' + id); return e ? e.value : null; };
+  const pl = { id: b ? b.id : '', houseId: h.id, rooms, kind, ci, co, aci: f.aci, aco: f.aco, adults: +v('f-adults') || 1, children: +v('f-children') || 0,
+    source: v('f-source'), otaCode: (v('f-ota') || '').trim(), note: (v('f-note') || '').trim() };
+  if ($('#f-name') && !$('#f-name').disabled){ pl.guestName = v('f-name').trim(); pl.guestPhone = v('f-phone').trim(); }
+  if ($('#f-price') && !$('#f-price').disabled){ pl.price = +v('f-price') || 0; pl.deposit = +v('f-deposit') || 0; }
+  call('saveBooking', pl, { err:'f-err' });
+}
+function openBlockForm(bookingId){
+  const b = bookingId ? S.bookings.find(x => x.id === bookingId) : null;
+  const hs = b ? [H(b.houseId)] : housesWith('lich', 'them');
+  if (!hs.length) return toast('Bạn không có quyền khóa phòng.', true);
+  const now = Date.now();
+  modalState = { form:'block', bookingId: b ? b.id : null };
+  openModal(`<form data-form="block">${mHead(b ? 'Sửa khóa phòng' : 'Khóa phòng')}
+    <div class="modal-b"><p class="muted small" style="margin:0">Phòng bị khóa không đặt được trong khoảng thời gian này. Dùng khi bảo trì hoặc giữ phòng riêng.</p>
+    <label class="f">Phòng<select id="k-room" ${b ? 'disabled' : ''}>${hs.map(h => `<optgroup label="${esc(h.name)}">${h.rooms.map(r => `<option value="${h.id}|${r.id}"${b && b.roomId === r.id ? ' selected' : ''}>${esc(r.name)}</option>`).join('')}</optgroup>`).join('')}</select></label>
+    <div class="grid2"><label class="f">Từ<input type="datetime-local" id="k-from" value="${toInput(b ? b.ci : r10(now))}" required></label><label class="f">Đến<input type="datetime-local" id="k-to" value="${toInput(b ? b.co : r10(now + DAY))}" required></label></div>
+    <label class="f">Lý do<input id="k-note" maxlength="80" value="${esc(b ? b.note : '')}" placeholder="Ví dụ: sơn lại tường"></label>
+    ${b ? '' : '<label class="row"><input type="checkbox" id="k-hk" checked> Chuyển trạng thái phòng sang Bảo trì</label>'}
+    <div class="err hidden" id="k-err"></div></div>
+    <div class="modal-f"><button class="btn" type="button" data-act="close">Thôi</button><button class="btn primary" type="submit">${b ? 'Lưu' : 'Khóa phòng'}</button></div></form>`);
+}
+function saveBlock(){
+  const ms = modalState, b = ms.bookingId ? S.bookings.find(x => x.id === ms.bookingId) : null;
+  const [hid, rid] = b ? [b.houseId, b.roomId] : $('#k-room').value.split('|');
+  const ci = fromInput($('#k-from').value), co = fromInput($('#k-to').value), h = H(hid), r = RM(h, rid);
+  if (!(co > ci)) return errBox('k-err', 'Thời gian “Đến” phải sau “Từ”.');
+  const cand = { id: b ? b.id : 'new', roomId: rid, houseId: hid, ci, co, status:'block' };
+  const cl = conflicts(cand); if (cl.length) return errBox('k-err', 'Phòng đã có khách trong khoảng này: ' + cl.map(o => esc(guestName(o)) + ' ' + fDT(span(o)[0])).join(', '));
+  const note = $('#k-note').value.trim();
+  call('saveBlock', { id: b ? b.id : '', houseId: hid, roomId: rid, ci, co, note, setHk: !b && $('#k-hk').checked }, { err:'k-err' });
+}
+function openBooking(id){
+  const b = S.bookings.find(x => x.id === id); if (!b) return;
+  const h = H(b.houseId), r = RM(h, b.roomId), now = Date.now();
+  if (!can(h.id, 'lich') && !can(h.id, 'datphong')) return;
+  if (b.kind === 'khoa'){
+    const canE = can(h.id, 'lich', 'sua'), canX = can(h.id, 'lich', 'xoa');
+    return openModal(`${mHead('Khóa phòng ' + esc(r.name))}<div class="modal-b"><div class="row"><span class="pill st-block">Khóa phòng</span><span class="muted">${esc(h.name)}</span></div><div><b class="t">${fDT(b.ci)} → ${fDT(b.co)}</b></div><div>${esc(b.note || 'Không ghi lý do')}</div></div>
+      <div class="modal-f">${canX ? `<button class="btn danger" data-act="delBk" data-id="${b.id}">Mở khóa (xóa)</button>` : ''}<span class="grow"></span>${canE ? `<button class="btn" data-act="editBlock" data-id="${b.id}">Sửa</button>` : ''}<button class="btn primary" data-act="close">Đóng</button></div>`);
+  }
+  const showG = can(h.id, 'khach'), showM = can(h.id, 'tien'), canE = can(h.id, 'datphong', 'sua'), canX = can(h.id, 'datphong', 'xoa'), canPay = can(h.id, 'tien', 'them');
+  const paid = paidOf(b), remain = b.price - paid;
+  const early = b.aci && b.aci < b.ci - 15*MIN ? `Nhận sớm ${dur(b.ci - b.aci)}` : '';
+  const late = b.aco && b.aco > b.co + 15*MIN ? `Trả muộn ${dur(b.aco - b.co)}` : overdue(b) ? `Đang quá giờ trả ${dur(now - b.co)}` : '';
+  const group = b.groupId ? S.bookings.filter(x => x.groupId === b.groupId && x.id !== b.id) : [];
+  const qrContent = `${r.name} ${b.guest.name}`.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').replace(/[^A-Za-z0-9 ]/g, '').toUpperCase().slice(0, 40);
+  const acts = [];
+  if (canE && b.status === 'booked') acts.push(`<button class="btn primary" data-act="checkin" data-id="${b.id}">Nhận phòng</button>`);
+  if (canE && b.status === 'inhouse') acts.push(`<button class="btn primary" data-act="checkout" data-id="${b.id}">Trả phòng</button>`);
+  if (canPay && (b.status === 'inhouse' || b.status === 'booked' || (b.status === 'checkedout' && remain > 0))) acts.push(`<button class="btn" data-act="addPay" data-id="${b.id}">Thu tiền</button>`);
+  if (canE && (b.status === 'booked' || b.status === 'inhouse')) acts.push(`<button class="btn" data-act="extend" data-id="${b.id}">Gia hạn</button>`, `<button class="btn" data-act="editBk" data-id="${b.id}">${b.status === 'inhouse' ? 'Sửa giờ / tiền / phòng' : 'Sửa / đổi phòng'}</button>`);
+  if (canE && b.status === 'checkedout') acts.push(`<button class="btn" data-act="editBk" data-id="${b.id}">Sửa giờ thực tế / tiền</button>`);
+  if (canE && b.status === 'inhouse' && b.autoIn) acts.push(`<button class="btn" data-act="checkin" data-id="${b.id}">Xác nhận giờ đến</button>`);
+  if (canE && (b.status === 'booked' || (b.status === 'inhouse' && b.autoIn))) acts.push(`<button class="btn" data-act="cancelBk" data-id="${b.id}">Hủy</button>`, `<button class="btn" data-act="noshowBk" data-id="${b.id}">Không đến</button>`);
+  if (canX) acts.push(`<button class="btn danger" data-act="delBk" data-id="${b.id}">Xóa</button>`);
+  openModal(`${mHead(`Phòng ${esc(r.name)} · ${esc(guestName(b))}`)}
+   <div class="modal-b">
+     <div class="row"><span class="pill ${stCls(b)}">${stName(b)}</span>${b.autoIn ? '<span class="chip" title="App tự nhận phòng khi đến giờ đã đặt. Khách đến giờ khác thì bấm “Xác nhận giờ đến”; khách không đến thì bấm “Không đến”.">Tự nhận phòng đúng giờ đặt</span>' : ''}<span class="chip">${BKIND[b.kind]}</span><span class="chip">${esc(b.source)}${b.otaCode ? ' · ' + esc(b.otaCode) : ''}</span><span class="muted small">${esc(h.name)}</span></div>
+     <dl class="kv">
+       <dt>Nhận phòng</dt><dd><b class="t">${fDT(b.ci)} ${fDY(b.ci)}</b>${b.aci ? ` · thực tế <b class="t">${fDT(b.aci)}</b>` : ''}</dd>
+       <dt>Trả phòng</dt><dd><b class="t">${fDT(b.co)} ${fDY(b.co)}</b>${b.aco ? ` · thực tế <b class="t">${fDT(b.aco)}</b>` : ''}</dd>
+       ${early || late ? `<dt>Chênh giờ</dt><dd class="${late ? 'late-text' : ''}">${[early, late].filter(Boolean).join(' · ')}</dd>` : ''}
+       ${showG ? `<dt>Khách</dt><dd>${esc(b.guest.name || '—')} · ${esc(b.guest.phone || 'chưa có SĐT')}</dd>` : ''}
+       <dt>Số người</dt><dd>${b.guest.adults} người lớn${b.guest.children ? ', ' + b.guest.children + ' trẻ em' : ''}</dd>
+       ${group.length ? `<dt>Đặt theo đoàn</dt><dd>cùng ${group.map(x => 'P' + esc(RM(h, x.roomId).name)).join(', ')}</dd>` : ''}
+       ${b.note ? `<dt>Ghi chú</dt><dd>${esc(b.note)}</dd>` : ''}
+       <dt>Phòng hiện</dt><dd><span class="pill hk-${r.hk}">${HK[r.hk]}</span></dd>
+     </dl>
+     ${showM ? `<div class="card" style="padding:12px"><div class="money"><span>Tiền phòng</span><span>${money(b.price)}</span><span>Tiền cọc</span><span>− ${money(b.deposit)}</span>${b.payments.map(p => `<span class="muted">${p.amt < 0 ? 'Hoàn tiền' : 'Đã thu'} · ${esc(p.method)} · ${fDT(p.at)}</span><span>${p.amt < 0 ? '+ ' + money(-p.amt) : '− ' + money(p.amt)}</span>`).join('')}<span class="tot">${remain > 0 ? 'Còn phải thu' : remain < 0 ? 'Thu thừa' : 'Đã thu đủ'}</span><span class="tot ${remain > 0 ? 'red' : ''}">${money(Math.abs(remain))}</span></div>
+       ${remain > 0 && b.status !== 'cancelled' ? `<div class="note" style="margin-top:10px"><b>Chuyển khoản:</b> ${esc(h.bank.name)} · ${esc(h.bank.acc)} · ${esc(h.bank.holder)} · Số tiền ${money(remain)} · Nội dung “${esc(qrContent)}”.<br>Bản thật sẽ hiện ảnh mã VietQR có sẵn số tiền.</div>` : ''}</div>` : ''}
+   </div>
+   <div class="modal-f">${acts.join('')}<span class="grow"></span><button class="btn ghost" data-act="close">Đóng</button></div>`);
+}
+function doCheckin(id){
+  const b = S.bookings.find(x => x.id === id), h = H(b.houseId), r = RM(h, b.roomId), now = Date.now();
+  if (!can(h.id, 'datphong', 'sua')) return toast('Bạn không có quyền nhận phòng.', true);
+  const other = S.bookings.find(o => o.id !== b.id && o.roomId === b.roomId && o.status === 'inhouse');
+  if (other) return toast(`Phòng ${r.name} vẫn còn khách ${guestName(other)} chưa trả phòng.`, true);
+  const showM = can(h.id, 'tien'), canP = can(h.id, 'tien', 'sua');
+  modalState = { form:'checkin', id };
+  openModal(`<form data-form="checkin">${mHead('Nhận phòng ' + esc(r.name))}<div class="modal-b">
+    ${r.hk !== 'sach' ? `<div class="err">Phòng ${esc(r.name)} đang <b>${HK[r.hk]}</b>. Kiểm tra lại trước khi giao phòng.</div>` : ''}
+    <dl class="kv"><dt>Khách</dt><dd>${esc(guestName(b))}</dd><dt>Giờ nhận đã đặt</dt><dd class="t">${fDT(b.ci)} ${fDY(b.ci)}</dd><dt>Giờ trả đã đặt</dt><dd class="t">${fDT(b.co)} ${fDY(b.co)}</dd></dl>
+    <label class="f">Giờ nhận thực tế (mặc định là bây giờ, sửa được)<input type="datetime-local" id="ci-at" data-chg="ciAt" value="${toInput(now)}" required></label>
+    <div class="small muted" id="ci-diff"></div>
+    ${showM ? `<label class="f">Tiền phòng (tự nhập, cộng phụ thu nhận sớm nếu có)<input type="number" id="ci-price" min="0" step="1000" value="${b.price}" ${canP ? '' : 'disabled'}></label>` : ''}
+    <div class="err hidden" id="ci-err"></div>
+  </div><div class="modal-f"><button class="btn" type="button" data-act="close">Thôi</button><button class="btn primary" type="submit">Nhận phòng</button></div></form>`);
+  ciDiff();
+}
+function ciDiff(){ const b = S.bookings.find(x => x.id === modalState.id), t = fromInput($('#ci-at').value); $('#ci-diff').textContent = t < b.ci - 15*MIN ? `Khách đến sớm ${dur(b.ci - t)} so với giờ đã đặt.` : t > b.ci + 15*MIN ? `Khách đến trễ ${dur(t - b.ci)} so với giờ đã đặt.` : 'Đúng giờ đã đặt.'; }
+function saveCheckin(){
+  const b = S.bookings.find(x => x.id === modalState.id), h = H(b.houseId), r = RM(h, b.roomId);
+  const t = fromInput($('#ci-at').value);
+  if (Number.isNaN(t)) return errBox('ci-err', 'Hãy nhập giờ nhận phòng.');
+  if (t > Date.now() + 5*MIN) return errBox('ci-err', 'Giờ nhận thực tế không thể sau thời điểm hiện tại.');
+  if (!(t < b.co)) return errBox('ci-err', 'Giờ nhận phải trước giờ trả phòng.');
+  const cl = conflicts({ ...b, status:'inhouse', aci: t });
+  if (cl.length) return errBox('ci-err', `Trùng với ${cl[0].kind === 'khoa' ? 'khóa phòng' : esc(guestName(cl[0]))} (${fDT(span(cl[0])[0])} → ${fDT(span(cl[0])[1])}).`);
+  const pr = $('#ci-price');
+  call('checkin', { id: b.id, at: t, price: pr && !pr.disabled ? (+pr.value || 0) : null }, { err:'ci-err' });
+}
+function openCheckout(id){
+  const b = S.bookings.find(x => x.id === id), h = H(b.houseId), r = RM(h, b.roomId), now = Date.now();
+  if (!can(h.id, 'datphong', 'sua')) return toast('Bạn không có quyền trả phòng.', true);
+  const showM = can(h.id, 'tien'), canPay = can(h.id, 'tien', 'them'), canP = can(h.id, 'tien', 'sua');
+  const paid = paidOf(b);
+  modalState = { form:'checkout', id };
+  openModal(`<form data-form="checkout">${mHead('Trả phòng ' + esc(r.name))}<div class="modal-b">
+    <dl class="kv"><dt>Khách</dt><dd>${esc(guestName(b))}</dd><dt>Nhận thực tế</dt><dd class="t">${fDT(b.aci)} ${fDY(b.aci)}</dd><dt>Giờ trả đã đặt</dt><dd class="t">${fDT(b.co)} ${fDY(b.co)}</dd></dl>
+    <label class="f">Giờ trả thực tế (mặc định là bây giờ, sửa được)<input type="datetime-local" id="co-at" data-chg="coCalc" value="${toInput(now)}" required></label>
+    <div class="small muted" id="co-diff"></div>
+    ${showM ? `<div class="grid2"><label class="f">Tiền phòng (tự nhập, cộng phụ thu trả muộn nếu có)<input type="number" id="co-price" data-inp="coCalc" min="0" step="1000" value="${b.price}" ${canP ? '' : 'disabled'}></label><div class="money" style="align-self:end"><span>Đã thu (cọc + thanh toán)</span><span>${money(paid)}</span><span class="tot">Còn phải thu</span><span class="tot red" id="co-remain"></span></div></div>
+      ${canPay ? `<div class="grid2"><label class="f">Thu ngay (tự nhập)<input type="number" id="co-amt" min="0" step="1000" value="0"></label><label class="f">Cách trả<select id="co-method">${METHODS.map(m => `<option${(b.source !== 'Trực tiếp' && m === 'OTA đã thu') ? ' selected' : ''}>${m}</option>`).join('')}</select></label></div>` : ''}` : ''}
+    <div class="note">Sau khi trả phòng, phòng ${esc(r.name)} tự chuyển sang <b class="hk-ban">Bẩn</b> và hiện trong danh sách dọn phòng.</div>
+    <div class="err hidden" id="co-err"></div>
+  </div><div class="modal-f"><button class="btn" type="button" data-act="close">Thôi</button><button class="btn primary" type="submit">Trả phòng</button></div></form>`);
+  coCalc();
+}
+function coCalc(){
+  const b = S.bookings.find(x => x.id === modalState.id), t = fromInput($('#co-at').value);
+  $('#co-diff').textContent = t > b.co + 15*MIN ? `Khách trả muộn ${dur(t - b.co)} so với giờ đã đặt.` : t < b.co - 15*MIN ? `Khách trả sớm ${dur(b.co - t)} so với giờ đã đặt.` : 'Đúng giờ đã đặt.';
+  const p = $('#co-price'); if (p) $('#co-remain').textContent = money(Math.max(0, (+p.value || 0) - paidOf(b)));
+}
+function doCheckout(){
+  const b = S.bookings.find(x => x.id === modalState.id), h = H(b.houseId), r = RM(h, b.roomId), now = Date.now();
+  const t = fromInput($('#co-at').value);
+  if (Number.isNaN(t)) return errBox('co-err', 'Hãy nhập giờ trả phòng.');
+  if (!(t > b.aci)) return errBox('co-err', 'Giờ trả phải sau giờ nhận thực tế ' + fDT(b.aci) + '.');
+  if (t > now + 5*MIN) return errBox('co-err', 'Giờ trả thực tế không thể sau thời điểm hiện tại.');
+  const pr = $('#co-price');
+  call('checkout', { id: b.id, at: t, price: pr && !pr.disabled ? (+pr.value || 0) : null,
+    amt: $('#co-amt') ? +$('#co-amt').value || 0 : 0, method: $('#co-method') ? $('#co-method').value : '' }, { err:'co-err' });
+}
+function openExtend(id){
+  const b = S.bookings.find(x => x.id === id), h = H(b.houseId), r = RM(h, b.roomId);
+  if (!can(h.id, 'datphong', 'sua')) return toast('Bạn không có quyền gia hạn.', true);
+  const nextB = S.bookings.filter(o => o.roomId === b.roomId && o.id !== b.id && isActive(o) && span(o)[0] >= b.co).sort((x, y) => span(x)[0] - span(y)[0])[0];
+  modalState = { form:'extend', id, nextId: nextB ? nextB.id : null };
+  const canPrice = can(h.id, 'tien', 'sua');
+  openModal(`<form data-form="extend">${mHead('Gia hạn phòng ' + esc(r.name))}<div class="modal-b">
+    <dl class="kv"><dt>Khách</dt><dd>${esc(guestName(b))}</dd><dt>Kiểu thuê</dt><dd>${BKIND[b.kind]}</dd><dt>Giờ trả hiện tại</dt><dd class="t"><b>${fDT(b.co)} ${fDY(b.co)}</b></dd></dl>
+    ${nextB ? `<div class="note">Khách tiếp theo ${nextB.kind === 'khoa' ? '(khóa phòng)' : esc(guestName(nextB))} nhận phòng ${esc(r.name)} lúc <b>${fDT(span(nextB)[0])}</b>. Chỉ gia hạn được đến trước giờ đó, hoặc chuyển khách sang phòng khác bằng “Sửa / đổi phòng”.</div>` : ''}
+    <div class="f"><span>Thêm nhanh</span><div class="row"><button type="button" class="btn sm" data-act="extQuick" data-h="1">+1 giờ</button><button type="button" class="btn sm" data-act="extQuick" data-h="2">+2 giờ</button><button type="button" class="btn sm" data-act="extQuick" data-h="3">+3 giờ</button><button type="button" class="btn sm" data-act="extQuick" data-h="night">+1 đêm</button></div></div>
+    <label class="f">Giờ trả mới<input type="datetime-local" id="ex-co" data-chg="exCo" value="${toInput(b.co + HOUR)}" required></label>
+    ${canPrice ? `<label class="f">Tiền phòng (tự nhập nếu thu thêm, app không tự đổi)<input type="number" id="ex-price" min="0" step="1000" value="${b.price}"></label>` : ''}
+    <div id="ex-info"></div><div class="err hidden" id="ex-err"></div>
+  </div><div class="modal-f"><button class="btn" type="button" data-act="close">Thôi</button><button class="btn primary" type="submit">Gia hạn</button></div></form>`);
+  extendRefresh();
+}
+function extendRefresh(){
+  const b = S.bookings.find(x => x.id === modalState.id), h = H(b.houseId), r = RM(h, b.roomId);
+  const co = fromInput($('#ex-co').value), box = $('#ex-info'); $('#ex-err').classList.add('hidden');
+  if (!(co > (b.aci || b.ci))){ box.innerHTML = '<div class="err">Giờ trả phải sau giờ nhận phòng.</div>'; return; }
+  const cl = conflicts({ ...b, co });
+  const np = priceFor(h, r, b.kind, b.aci || b.ci, co);
+  let html = `<div class="note">${co >= b.co ? 'Thêm' : 'Rút ngắn'} <b>${dur(co - b.co)}</b> · trả lúc <b>${fDT(co)}</b>`;
+  if (can(h.id, 'tien')) html += `<br>Giá tham khảo theo bảng giá cho cả thời gian ở: ${money(np)}. Tiền phòng chỉ đổi khi bạn tự sửa ô bên trên.`;
+  html += '</div>';
+  if (cl.length) html += `<div class="err">Trùng với ${cl[0].kind === 'khoa' ? 'khóa phòng' : esc(guestName(cl[0]))} nhận lúc ${fDT(span(cl[0])[0])}.</div>`;
+  box.innerHTML = html;
+}
+function saveExtend(){
+  const b = S.bookings.find(x => x.id === modalState.id), h = H(b.houseId), r = RM(h, b.roomId);
+  const co = fromInput($('#ex-co').value);
+  if (!(co > (b.aci || b.ci))) return errBox('ex-err', 'Giờ trả phải sau giờ nhận phòng.');
+  const cl = conflicts({ ...b, co });
+  if (cl.length) return errBox('ex-err', `Không gia hạn được: trùng với ${cl[0].kind === 'khoa' ? 'khóa phòng' : esc(guestName(cl[0]))} lúc ${fDT(span(cl[0])[0])}. Hãy chọn giờ sớm hơn hoặc đổi phòng.`);
+  call('extend', { id: b.id, co, price: $('#ex-price') ? (+$('#ex-price').value || 0) : null }, { err:'ex-err' });
+}
+function openPay(id){
+  const b = S.bookings.find(x => x.id === id), h = H(b.houseId);
+  if (!can(h.id, 'tien', 'them')) return toast('Bạn không có quyền thu tiền.', true);
+  modalState = { form:'pay', id };
+  const remain = Math.max(0, b.price - paidOf(b));
+  openModal(`<form data-form="pay">${mHead('Thu tiền')}<div class="modal-b"><div class="grid2"><label class="f">Số tiền<input type="number" id="p-amt" min="1000" step="1000" value="${remain}" required></label><label class="f">Cách trả<select id="p-method">${METHODS.map(m => `<option>${m}</option>`).join('')}</select></label></div><div class="muted small">Còn phải thu: ${money(remain)}</div></div>
+    <div class="modal-f"><button class="btn" type="button" data-act="close">Thôi</button><button class="btn primary" type="submit">Ghi nhận</button></div></form>`);
+}
+async function cancelBk(id, noshow){
+  const b = S.bookings.find(x => x.id === id), h = H(b.houseId), r = RM(h, b.roomId);
+  const hasDep = b.deposit > 0 && can(h.id, 'tien');
+  modalState = null;
+  const ok = await confirmBox({ title: noshow ? 'Đánh dấu khách không đến' : 'Hủy lượt đặt', html:`<p>${noshow ? 'Khách' : 'Hủy lượt đặt của'} <b>${esc(guestName(b))}</b>, phòng ${esc(r.name)}, ${fDT(b.ci)}${noshow ? ' không đến' : ''}. Phòng sẽ trống lại trên lịch.</p>
+      <label class="f">Lý do<input id="cx-reason" maxlength="100"></label>
+      ${hasDep ? `<div class="checks"><label><input type="radio" name="cx-dep" value="keep" checked>Giữ cọc ${money(b.deposit)}</label><label><input type="radio" name="cx-dep" value="refund">Hoàn cọc cho khách</label></div>` : ''}`, ok: noshow ? 'Không đến' : 'Hủy lượt đặt', danger:true });
+  if (!ok) return;
+  call('cancel', { id, noshow: !!noshow, reason: ok.reason, refund: ok.refund });
+}
+async function delBk(id){
+  const b = S.bookings.find(x => x.id === id), h = H(b.houseId), r = RM(h, b.roomId);
+  const ok = await confirmBox({ title: b.kind === 'khoa' ? 'Mở khóa phòng' : 'Xóa lượt đặt', html:`<p>${b.kind === 'khoa' ? `Bỏ khóa phòng ${esc(r.name)}.` : `Xóa hẳn lượt đặt của <b>${esc(guestName(b))}</b>, phòng ${esc(r.name)}. Nên dùng “Hủy” nếu muốn giữ lại lịch sử.`}</p>`, ok: b.kind === 'khoa' ? 'Mở khóa' : 'Xóa', danger:true });
+  if (!ok) return;
+  call('delBooking', { id });
+}
+
+/* ---- dọn phòng ---- */
+async function hkOp(op, hid, rid){
+  const h = H(hid), r = RM(h, rid), now = Date.now();
+  if (op === 'pass' || op === 'fail'){ if (!can(hid, 'kiemtra', 'sua')) return toast('Chỉ người có quyền kiểm tra mới duyệt được.', true); }
+  else if (!can(hid, 'donphong', 'sua')) return toast('Bạn không có quyền đổi trạng thái phòng.', true);
+  if (op === 'broken' || op === 'note'){
+    modalState = { form:'hknote', op, hid, rid };
+    return openModal(`<form data-form="hknote">${mHead((op === 'broken' ? 'Báo hỏng phòng ' : 'Ghi chú phòng ') + esc(r.name))}<div class="modal-b"><label class="f">${op === 'broken' ? 'Hỏng gì?' : 'Đồ cần bổ sung, đồ khách để quên…'}<textarea id="hn-text" maxlength="200" autofocus ${op === 'broken' ? 'required' : ''}>${op === 'note' ? esc(r.hkNote) : ''}</textarea></label>${op === 'broken' ? '<div class="note">Phòng sẽ chuyển sang Bảo trì. Muốn chặn đặt phòng trong lúc sửa, dùng “Khóa phòng” trên Lịch.</div>' : ''}</div>
+      <div class="modal-f"><button class="btn" type="button" data-act="close">Thôi</button><button class="btn primary" type="submit">Lưu</button></div></form>`);
+  }
+  // Đổi ngay trên màn hình, máy chủ lưu phía sau. Nếu máy chủ báo lỗi thì tải lại dữ liệu thật.
+  if (op === 'start') Object.assign(r, { hk:'dangdon', hkBy: me.id, hkStart: now, hkEnd: null, assignee: r.assignee || me.id });
+  else if (op === 'done') Object.assign(r, { hk:'chokiem', hkEnd: now });
+  else if (op === 'pass') Object.assign(r, { hk:'sach', hkDoneAt: now });
+  else if (op === 'fail') Object.assign(r, { hk:'ban', hkStart: null, hkEnd: null });
+  else if (op === 'fixed') Object.assign(r, { hk:'ban', hkNote: '' });
+  else if (op === 'dirty') r.hk = 'ban';
+  else if (op === 'dnd') r.dnd = !r.dnd;
+  render();
+  call('hk', { houseId: hid, roomId: rid, op }, { optimistic: true });
+}
+
+/* ---- nhà ---- */
+function openHouseForm(id){
+  const h = id ? H(id) : null;
+  if (h ? !can(h.id, 'caidat', 'sua') : !me.isOwner) return toast('Chỉ Chủ mới thêm nhà được.', true);
+  modalState = { form:'house', id, types: JSON.parse(JSON.stringify(h ? h.types : [{ id: uid(), name:'Standard', night:450000, h2:170000, h3:220000, hourNext:50000, overnight:300000 }])) };
+  const others = S.houses.filter(x => !x.archived && x.id !== id);
+  const showM = !h || can(h.id, 'tien');
+  openModal(`<form data-form="house">${mHead(h ? 'Sửa thông tin nhà' : 'Thêm nhà')}<div class="modal-b">
+    ${!h && others.length ? `<label class="f">Sao chép cấu hình từ nhà khác (giờ, loại phòng, danh sách phòng)<select id="h-copy" data-chg="hCopy"><option value="">— Không sao chép —</option>${others.map(x => `<option value="${x.id}">${esc(x.name)}</option>`).join('')}</select></label>` : ''}
+    <label class="f">Tên nhà<input id="h-name" required maxlength="60" value="${esc(h ? h.name : '')}"></label>
+    <div class="grid2"><label class="f">Địa chỉ<input id="h-addr" maxlength="120" value="${esc(h ? h.address : '')}"></label><label class="f">Điện thoại<input id="h-phone" maxlength="20" value="${esc(h ? h.phone : '')}"></label></div>
+    <div class="grid2"><label class="f">Giờ nhận phòng chuẩn<input type="time" id="h-ci" value="${h ? h.ci : '14:00'}" required></label><label class="f">Giờ trả phòng chuẩn<input type="time" id="h-co" value="${h ? h.co : '12:00'}" required></label>
+    <label class="f">Qua đêm: nhận từ<input type="time" id="h-onin" value="${h ? h.onIn : '22:00'}"></label><label class="f">Qua đêm: trả trước<input type="time" id="h-onout" value="${h ? h.onOut : '10:00'}"></label></div>
+    ${showM ? `<h3>Tài khoản nhận tiền (VietQR)</h3><div class="grid3"><label class="f">Ngân hàng<input id="h-bank" maxlength="40" value="${esc(h ? h.bank.name : '')}"></label><label class="f">Số tài khoản<input id="h-acc" inputmode="numeric" maxlength="20" value="${esc(h ? h.bank.acc : '')}"></label><label class="f">Chủ tài khoản<input id="h-holder" maxlength="50" value="${esc(h ? h.bank.holder : '')}"></label></div>
+    <div class="row"><h3 class="grow">Loại phòng và bảng giá</h3><button class="btn sm" type="button" data-act="addType">+ Loại phòng</button></div><div id="h-types"></div>` : ''}
+    ${!h ? '<p class="muted small" style="margin:0">Sau khi tạo nhà, bấm “Sửa phòng” để thêm danh sách phòng (nếu không sao chép từ nhà khác).</p>' : ''}
+    <div class="err hidden" id="h-err"></div></div>
+    <div class="modal-f"><button class="btn" type="button" data-act="close">Thôi</button><button class="btn primary" type="submit">${h ? 'Lưu' : 'Tạo nhà'}</button></div></form>`, { wide:true });
+  drawTypes();
+}
+function drawTypes(){
+  const box = $('#h-types'); if (!box) return;
+  box.innerHTML = `<div class="tbl-wrap"><table><thead><tr><th>Tên loại</th><th>Giá 1 đêm</th><th>Qua đêm</th><th>2 giờ đầu</th><th>3 giờ đầu</th><th>Mỗi giờ sau</th><th></th></tr></thead><tbody>${modalState.types.map((t, i) => `<tr>
+    <td><input data-ty="${i}" data-k="name" value="${esc(t.name)}" maxlength="30" style="width:120px" required></td>
+    ${['night','overnight','h2','h3','hourNext'].map(k => `<td><input type="number" min="0" step="1000" data-ty="${i}" data-k="${k}" value="${t[k]}" style="width:110px"></td>`).join('')}
+    <td><button class="btn sm ghost danger" type="button" data-act="delType" data-i="${i}" aria-label="Xóa loại">✕</button></td></tr>`).join('')}</tbody></table></div>`;
+}
+function readTypes(){ document.querySelectorAll('[data-ty]').forEach(el => { const t = modalState.types[+el.dataset.ty]; t[el.dataset.k] = el.dataset.k === 'name' ? el.value.trim() : (+el.value || 0); }); }
+function saveHouse(){
+  const ms = modalState, v = id => ($('#' + id) || {}).value;
+  const name = v('h-name').trim(); if (!name) return errBox('h-err', 'Hãy nhập tên nhà.');
+  if (S.houses.some(x => x.id !== ms.id && !x.archived && x.name.toLowerCase() === name.toLowerCase())) return errBox('h-err', 'Đã có nhà trùng tên này.');
+  if ($('#h-types')){ readTypes(); if (!ms.types.length) return errBox('h-err', 'Cần ít nhất một loại phòng.'); if (ms.types.some(t => !t.name)) return errBox('h-err', 'Loại phòng nào cũng cần có tên.'); }
+  const data = { name, address: v('h-addr').trim(), phone: v('h-phone').trim(), ci: v('h-ci'), co: v('h-co'), onIn: v('h-onin'), onOut: v('h-onout') };
+  if ($('#h-bank')) data.bank = { name: v('h-bank').trim(), acc: v('h-acc').trim(), holder: v('h-holder').trim().toUpperCase() };
+  if ($('#h-types')) data.types = ms.types;
+  if (!ms.id && ms.copyFrom) data.copyFrom = ms.copyFrom;
+  call('saveHouse', { id: ms.id || '', ...data }, { err:'h-err', after: r => { if (!ms.id && r.id){ ui.house = r.id; render(); } } });
+}
+function openRooms(id){
+  const h = H(id); if (!can(id, 'caidat', 'sua')) return toast('Bạn không có quyền sửa phòng.', true);
+  modalState = { form:'rooms', id, rooms: h.rooms.map(r => ({ id: r.id, name: r.name, floor: r.floor, typeId: r.typeId })) };
+  openModal(`<form data-form="rooms">${mHead('Phòng của ' + esc(h.name))}<div class="modal-b"><div id="rm-list"></div><button class="btn sm" type="button" data-act="addRoom" style="align-self:flex-start">+ Thêm phòng</button><div class="err hidden" id="rm-err"></div></div>
+    <div class="modal-f"><button class="btn" type="button" data-act="close">Thôi</button><button class="btn primary" type="submit">Lưu danh sách phòng</button></div></form>`, { nofocus:true });
+  drawRooms();
+}
+function drawRooms(){
+  const h = H(modalState.id);
+  $('#rm-list').innerHTML = `<div class="tbl-wrap"><table><thead><tr><th>Số phòng</th><th>Tầng</th><th>Loại phòng</th><th></th></tr></thead><tbody>${modalState.rooms.map((r, i) => `<tr>
+    <td><input data-rm="${i}" data-k="name" value="${esc(r.name)}" maxlength="10" style="width:90px" required></td>
+    <td><input type="number" data-rm="${i}" data-k="floor" value="${r.floor}" min="0" max="99" style="width:70px"></td>
+    <td><select data-rm="${i}" data-k="typeId">${h.types.map(t => `<option value="${t.id}"${r.typeId === t.id ? ' selected' : ''}>${esc(t.name)}</option>`).join('')}</select></td>
+    <td><button class="btn sm ghost danger" type="button" data-act="delRoom" data-i="${i}" aria-label="Xóa phòng">✕</button></td></tr>`).join('')}</tbody></table></div>`;
+}
+function readRooms(){ document.querySelectorAll('[data-rm]').forEach(el => { const r = modalState.rooms[+el.dataset.rm]; r[el.dataset.k] = el.dataset.k === 'floor' ? (+el.value || 0) : el.value.trim(); }); }
+function saveRooms(){
+  readRooms();
+  const h = H(modalState.id), list = modalState.rooms;
+  if (list.some(r => !r.name)) return errBox('rm-err', 'Phòng nào cũng cần có số phòng.');
+  const names = list.map(r => r.name.toLowerCase()); const dup = names.find((n, i) => names.indexOf(n) !== i);
+  if (dup) return errBox('rm-err', `Số phòng “${esc(dup)}” bị trùng.`);
+  const removed = h.rooms.filter(r => !list.find(x => x.id === r.id));
+  if (removed.length && !can(h.id, 'caidat', 'xoa')) return errBox('rm-err', 'Bạn không có quyền xóa phòng.');
+  const known = new Set(h.rooms.map(r => r.id));
+  call('saveRooms', { houseId: h.id, rooms: list.map(x => ({ id: known.has(x.id) ? x.id : '', name: x.name, floor: x.floor, typeId: x.typeId })) }, { err:'rm-err' });
+}
+async function archiveHouse(id){
+  const h = H(id), now = Date.now();
+  const fut = S.bookings.filter(b => b.houseId === id && b.status === 'booked' && b.kind !== 'khoa' && b.ci > now).length;
+  const inh = S.bookings.filter(b => b.houseId === id && b.status === 'inhouse').length;
+  const ok = await confirmBox({ title:'Xóa ' + h.name, html:`${fut || inh ? `<div class="err">Nhà này còn ${inh ? inh + ' phòng đang có khách' : ''}${inh && fut ? ' và ' : ''}${fut ? fut + ' lượt đặt sắp tới' : ''}.</div>` : ''}<p>Nhà sẽ được chuyển vào <b>Nhà đã lưu trữ</b>: ẩn khỏi mọi màn hình và mọi nhân viên, nhưng dữ liệu cũ vẫn giữ và khôi phục được.</p>`, ok:'Chuyển vào lưu trữ', danger:true, typeText: h.name });
+  if (!ok) return;
+  if (ui.house === id) ui.house = 'all';
+  call('archiveHouse', { id });
+}
+async function purgeHouse(id){
+  const h = H(id); const n = S.bookings.filter(b => b.houseId === id).length;
+  const ok = await confirmBox({ title:'Xóa vĩnh viễn ' + h.name, html:`<div class="err">Không thể hoàn tác.</div><p>Xóa hẳn ${h.rooms.length} phòng, ${n} lượt đặt và mọi quyền của nhân viên ở nhà này.</p>`, ok:'Xóa vĩnh viễn', danger:true, typeText: h.name });
+  if (!ok) return;
+  call('purgeHouse', { id });
+}
+
+/* ---- người dùng ---- */
+function openUserForm(){
+  modalState = { form:'user' };
+  const hs = S.houses.filter(h => !h.archived);
+  openModal(`<form data-form="user">${mHead('Thêm nhân viên')}<div class="modal-b">
+    <div class="grid2"><label class="f">Tên hiển thị<input id="u-name" required maxlength="40"></label><label class="f">Tên đăng nhập<input id="u-user" required maxlength="30" pattern="[a-z0-9._]+" title="Chữ thường không dấu, số, dấu chấm" autocomplete="off"></label></div>
+    <label class="f">Mã PIN 6 số (đưa cho nhân viên)<input id="u-pin" required inputmode="numeric" pattern="\\d{6}" maxlength="6" autocomplete="new-password"></label>
+    <div class="grid2"><label class="f">Vai trò ban đầu<select id="u-role">${Object.entries(ROLES).map(([k, r]) => `<option value="${k}"${k === 'letan' ? ' selected' : ''}>${r.n}</option>`).join('')}</select></label>
+    <div class="f"><span>Ở những nhà</span><div class="checks">${hs.map(h => `<label><input type="checkbox" class="u-h" value="${h.id}"${ui.house === h.id || hs.length === 1 ? ' checked' : ''}>${esc(h.name)}</label>`).join('')}</div></div></div>
+    <p class="muted small" style="margin:0">Sau khi tạo, bạn chỉnh quyền chi tiết từng ô trong “Sửa quyền”.</p>
+    <div class="err hidden" id="u-err"></div></div>
+    <div class="modal-f"><button class="btn" type="button" data-act="close">Thôi</button><button class="btn primary" type="submit">Tạo tài khoản</button></div></form>`);
+}
+async function saveUser(){
+  const name = $('#u-name').value.trim(), username = $('#u-user').value.trim().toLowerCase(), pin = $('#u-pin').value.trim();
+  if (S.users.some(u => u.username === username)) return errBox('u-err', 'Tên đăng nhập này đã có người dùng.');
+  if (!/^\d{6}$/.test(pin)) return errBox('u-err', 'Mã PIN phải gồm đúng 6 chữ số.');
+  const houses = [...document.querySelectorAll('.u-h:checked')].map(c => c.value);
+  call('addUser', { name, username, pin, role: $('#u-role').value, houses }, { err:'u-err' });
+}
+function openPerms(uidv, hid){
+  const u = S.users.find(x => x.id === uidv);
+  const hs = S.houses.filter(h => !h.archived);
+  modalState = { form:'perms', uid: uidv, draft: JSON.parse(JSON.stringify(u.perms)), house: hid || (hs.find(h => u.perms[h.id]) || hs[0] || {}).id };
+  drawPerms();
+}
+function drawPerms(){
+  const ms = modalState, u = S.users.find(x => x.id === ms.uid), hs = S.houses.filter(h => !h.archived), h = H(ms.house), p = ms.draft[ms.house];
+  openModal(`<form data-form="perms">${mHead('Quyền của ' + esc(u.name))}<div class="modal-b">
+    <div class="seg" style="flex-wrap:wrap">${hs.map(x => `<button type="button" data-act="permHouse" data-h="${x.id}" class="${x.id === ms.house ? 'on' : ''}">${esc(x.name)}${ms.draft[x.id] ? ' ✓' : ''}</button>`).join('')}</div>
+    <label class="row" style="font-weight:600"><input type="checkbox" data-chg="permAccess" ${p ? 'checked' : ''}> Được vào ${esc(h.name)}</label>
+    ${p ? `<div class="row small"><span class="muted">Áp nhanh mẫu:</span>${Object.entries(ROLES).map(([k, r]) => `<button type="button" class="btn sm ${roleOf(p) === k ? 'on' : ''}" data-act="permRole" data-k="${k}">${r.n}</button>`).join('')}</div>
+      <div class="tbl-wrap"><table><thead><tr><th>Mục</th>${Object.values(ACTS).map(a => `<th class="c">${a}</th>`).join('')}</tr></thead><tbody>${MODULES.map(m => `<tr><td>${m.n}</td>${Object.keys(ACTS).map(a => `<td class="c">${m.a.includes(a) ? `<input type="checkbox" data-chg="permCell" data-m="${m.k}" data-a="${a}" ${p[m.k][a] ? 'checked' : ''} aria-label="${m.n} – ${ACTS[a]}">` : '<span class="muted">–</span>'}</td>`).join('')}</tr>`).join('')}</tbody></table></div>
+      <div class="row"><button type="button" class="btn sm" data-act="permAll">Áp quyền này cho tất cả nhà</button><span class="muted small">Hiện tại: ${esc(roleName(p))}</span></div>`
+    : `<div class="note">${esc(u.name)} không thấy ${esc(h.name)} trong ứng dụng, kể cả tên nhà.</div>`}
+    <div class="note">Mục nào không được tick “Xem” sẽ bị ẩn hẳn. Dữ liệu tên khách, SĐT, giá chỉ gửi tới người có quyền xem mục đó.</div>
+  </div><div class="modal-f"><button class="btn" type="button" data-act="close">Thôi</button><button class="btn primary" type="submit">Lưu quyền</button></div></form>`, { wide:true, nofocus:true });
+}
+function savePerms(){
+  call('savePerms', { userId: modalState.uid, perms: modalState.draft });
+}
+function openPin(id){
+  const u = S.users.find(x => x.id === id); modalState = { form:'pin', id };
+  openModal(`<form data-form="pin">${mHead((u.isOwner ? 'Đổi PIN của ' : 'Đặt lại PIN cho ') + esc(u.name))}<div class="modal-b"><label class="f">Mã PIN mới (6 số)<input id="pn-pin" required inputmode="numeric" pattern="\\d{6}" maxlength="6" autocomplete="new-password"></label><div class="err hidden" id="pn-err"></div></div>
+    <div class="modal-f"><button class="btn" type="button" data-act="close">Thôi</button><button class="btn primary" type="submit">Lưu PIN</button></div></form>`);
+}
+
+/* ====== kéo thả trên lịch ====== */
+let drag = null, suppressUntil = 0;
+document.addEventListener('pointerdown', e => {
+  if (e.pointerType === 'touch' || e.button !== 0) return;
+  const bar = e.target.closest('.bar[data-drag]'); if (!bar) return;
+  const b = S.bookings.find(x => x.id === bar.dataset.id); if (!b) return;
+  drag = { b, bar, x0: e.clientX, y0: e.clientY, w0: bar.offsetWidth, mode: e.target.classList.contains('bar-grip') ? 'resize' : 'move', moved:false };
+});
+document.addEventListener('pointermove', e => {
+  if (!drag) return;
+  const dx = e.clientX - drag.x0, dy = e.clientY - drag.y0;
+  if (!drag.moved){ if (Math.hypot(dx, dy) < 6) return; drag.moved = true; drag.bar.classList.add('dragging'); }
+  if (drag.mode === 'move') drag.bar.style.transform = `translate(${drag.b.status === 'inhouse' ? 0 : dx}px,${dy}px)`;
+  else drag.bar.style.width = Math.max(8, drag.w0 + dx) + 'px';
+  e.preventDefault();
+});
+document.addEventListener('pointerup', e => {
+  if (!drag) return; const d = drag; drag = null;
+  if (!d.moved) return;
+  suppressUntil = Date.now() + 350;
+  const b = d.b, h = H(b.houseId), pph = DAYW[ui.calDays] / 24, dx = e.clientX - d.x0;
+  const raw = dx / pph * HOUR, step = ui.calDays === 1 ? 30*MIN : DAY, shift = Math.round(raw / step) * step;
+  const cand = { ...b };
+  if (d.mode === 'move'){
+    const under = document.elementFromPoint(e.clientX, e.clientY), track = under && under.closest('.track');
+    if (track && track.dataset.house === b.houseId) cand.roomId = track.dataset.room;
+    if (b.status !== 'inhouse'){ cand.ci = b.ci + shift; cand.co = b.co + shift; }
+  } else { cand.co = b.co + shift; if (cand.co <= (b.aci || b.ci) + 30*MIN){ toast('Giờ trả phải sau giờ nhận.', true); return render(); } }
+  if (cand.roomId === b.roomId && cand.ci === b.ci && cand.co === b.co) return render();
+  if (!can(h.id, 'lich', 'sua')){ toast('Bạn không có quyền sửa lịch.', true); return render(); }
+  const cl = conflicts(cand);
+  if (cl.length){ toast(`Không đổi được: trùng lịch với ${cl[0].kind === 'khoa' ? 'khóa phòng' : guestName(cl[0])} (${fDT(span(cl[0])[0])}).`, true); return render(); }
+  call('move', { id: b.id, roomId: cand.roomId, ci: cand.ci, co: cand.co }).then(r => { if (!r) render(); });
+});
+
+/* ====== sự kiện ====== */
+const A = {
+  view: d => { ui.view = d.v; if (d.v === 'cal') ui.scrollNow = true; render(); window.scrollTo(0, 0); if (d.v === 'log') loadLogs(); },
+  logout: () => { rpc('logout'); TOKEN = ''; saveTok(); S = null; me = null; ui.house = 'all'; saveUI(); render(); },
+  theme: () => { ui.theme = ui.theme === '' ? (matchMedia('(prefers-color-scheme: dark)').matches ? 'light' : 'dark') : ui.theme === 'dark' ? 'light' : 'dark'; applyTheme(); render(); savePrefs(); },
+  close: () => closeModal(),
+  modalBack: (d, el, e) => { if (e.target === el){ if (modalState && modalState.confirmRes) A.confirmNo(); else closeModal(); } },
+  confirmNo: () => { const r = modalState && modalState.confirmRes; closeModal(); r && r(false); },
+  // lịch
+  calMove: d => { ui.calStart += (+d.d) * ui.calDays * DAY; ui.calSL = 0; render(); },
+  calToday: () => { ui.calStart = sod(Date.now()) - (ui.calDays > 1 ? DAY : 0); ui.scrollNow = true; render(); },
+  calDays: d => { ui.calDays = +d.d; ui.calStart = sod(Date.now()) - (ui.calDays > 1 ? DAY : 0); ui.scrollNow = true; render(); },
+  calMode: d => { ui.calMode = d.m; ui.scrollNow = true; render(); },
+  listMove: d => { ui.listDay = sod(ui.listDay + (+d.d) * DAY + 2*HOUR); render(); },
+  listToday: () => { ui.listDay = sod(Date.now()); render(); },
+  calNew: (d, el, e) => {
+    if (!can(d.house, 'datphong', 'them')) return;
+    const pph = DAYW[ui.calDays] / 24, x = e.clientX - el.getBoundingClientRect().left;
+    let t = ui.calStart + x / pph * HOUR;
+    if (ui.calDays === 1) t = Math.floor(t / (30*MIN)) * 30*MIN; else t = sod(t);
+    const h = H(d.house);
+    openBookingForm({ houseId: d.house, roomId: d.room, ci: ui.calDays === 1 ? null : t });
+    if (ui.calDays === 1){ $('#f-ci').value = toInput(t); $('#f-co').value = toInput(t + 2*HOUR); bookingRefresh(); }
+  },
+  newBk: d => { openBookingForm({ houseId: d.house || (ui.house !== 'all' ? ui.house : null), roomId: d.room, ci: d.day ? +d.day : null }); },
+  newBlock: () => openBlockForm(),
+  editBlock: d => openBlockForm(d.id),
+  openBk: d => { if (Date.now() < suppressUntil) return; openBooking(d.id); },
+  editBk: d => openBookingForm({ bookingId: d.id }),
+  checkin: d => doCheckin(d.id),
+  checkout: d => openCheckout(d.id),
+  addPay: d => openPay(d.id),
+  extend: d => openExtend(d.id),
+  extQuick: d => { const b = S.bookings.find(x => x.id === modalState.id), h = H(b.houseId); const co = d.h === 'night' ? atTime(sod(b.co) + DAY, h.co) : b.co + (+d.h) * HOUR; $('#ex-co').value = toInput(co); extendRefresh(); },
+  useAutoPrice: () => { $('#f-price').value = modalState.auto || 0; bookingRefresh(); },
+  cancelBk: d => cancelBk(d.id, false),
+  noshowBk: d => cancelBk(d.id, true),
+  delBk: d => delBk(d.id),
+  // dọn phòng
+  hk: d => hkOp(d.op, d.h, d.r),
+  setTheme: d => { ui.theme = d.v; applyTheme(); render(); savePrefs(); },
+  repP: d => { ui.repP = d.p; if (d.p === 'custom' && !ui.repFrom){ const T = sod(Date.now()); ui.repFrom = ymd(T - 29*DAY); ui.repTo = ymd(T); } render(); },
+  hkMine: () => { ui.hkMine = !ui.hkMine; render(); },
+  hkClean: () => { ui.hkShowClean = !ui.hkShowClean; render(); },
+  // nhà
+  addHouse: () => openHouseForm(null),
+  editHouse: d => openHouseForm(d.id),
+  addType: () => { readTypes(); modalState.types.push({ id: uid(), name:'', night:0, h2:0, h3:0, hourNext:0, overnight:0 }); drawTypes(); },
+  delType: d => { readTypes(); modalState.types.splice(+d.i, 1); drawTypes(); },
+  editRooms: d => openRooms(d.id),
+  addRoom: () => { readRooms(); const h = H(modalState.id), last = modalState.rooms[modalState.rooms.length - 1]; modalState.rooms.push({ id: uid(), name:'', floor: last ? last.floor : 1, typeId: h.types[0].id }); drawRooms(); const inp = document.querySelectorAll('[data-rm][data-k="name"]'); inp[inp.length - 1].focus(); },
+  delRoom: d => {
+    readRooms(); const r = modalState.rooms[+d.i], now = Date.now();
+    const fut = S.bookings.filter(b => b.roomId === r.id && (b.status === 'inhouse' || (b.status === 'booked' && b.co > now)) && b.kind !== 'khoa');
+    if (fut.length) return errBox('rm-err', `Phòng ${esc(r.name)} còn ${fut.length} lượt đặt sắp tới hoặc đang có khách, chưa xóa được. Đổi phòng hoặc hủy các lượt đó trước.`);
+    modalState.rooms.splice(+d.i, 1); drawRooms();
+  },
+  archiveHouse: d => archiveHouse(d.id),
+  restoreHouse: d => call('restoreHouse', { id: d.id }),
+  purgeHouse: d => purgeHouse(d.id),
+  // người dùng
+  addUser: () => openUserForm(),
+  editPerms: d => openPerms(d.id, d.h),
+  permHouse: d => { modalState.house = d.h; drawPerms(); },
+  permRole: d => { modalState.draft[modalState.house] = ROLES[d.k].p(); drawPerms(); },
+  permAll: () => { const p = modalState.draft[modalState.house]; S.houses.filter(h => !h.archived).forEach(h => { modalState.draft[h.id] = JSON.parse(JSON.stringify(p)); }); drawPerms(); toast('Đã áp cho tất cả nhà. Bấm “Lưu quyền” để lưu.'); },
+  resetPin: d => openPin(d.id),
+  lockUser: d => call('lockUser', { userId: d.id }),
+  delUser: async d => { const u = S.users.find(x => x.id === d.id); const ok = await confirmBox({ title:'Xóa tài khoản ' + u.name, html:'<p>Người này sẽ không đăng nhập được nữa. Nhật ký cũ vẫn giữ tên họ.</p>', ok:'Xóa tài khoản', danger:true }); if (!ok) return; call('delUser', { userId: u.id }); },
+};
+document.addEventListener('click', e => {
+  if (Date.now() < suppressUntil) return;
+  const el = e.target.closest('[data-act]'); if (!el) return;
+  const f = A[el.dataset.act]; if (!f) return;
+  if (el.dataset.act !== 'modalBack') e.preventDefault();
+  e.stopPropagation();
+  f(el.dataset, el, e);
+});
+const CHG = {
+  house: el => { ui.house = el.value; ui.scrollNow = true; render(); },
+  floor: el => { ui.floor = el.value; render(); },
+  repFrom: el => { ui.repFrom = el.value; render(); },
+  repTo: el => { ui.repTo = el.value; render(); },
+  showCancel: el => { ui.showCancel = el.checked; render(); },
+  logHouse: el => { ui.logHouse = el.value; render(); },
+  assign: el => { const r = RM(H(el.dataset.h), el.dataset.r); if (r) r.assignee = el.value; call('assign', { houseId: el.dataset.h, roomId: el.dataset.r, userId: el.value }, { optimistic: true }); },
+  fHouse: el => { closeModal(); openBookingForm({ houseId: el.value }); },
+  fKind: el => {
+    const h = H(modalState.houseId), ci = fromInput($('#f-ci').value), k = el.value;
+    if (!$('#f-ci').disabled){
+      if (k === 'dem'){ $('#f-ci').value = toInput(atTime(ci, h.ci)); $('#f-co').value = toInput(atTime(ci + DAY, h.co)); }
+      if (k === 'gio'){ const s = sod(ci) === sod(Date.now()) ? Math.max(ci, r10(Date.now())) : ci; $('#f-ci').value = toInput(s); $('#f-co').value = toInput(s + 2*HOUR); }
+      if (k === 'quadem'){ $('#f-ci').value = toInput(atTime(ci, h.onIn)); $('#f-co').value = toInput(atTime(ci + DAY, h.onOut)); }
+    }
+    modalState.priceTouched = false; bookingRefresh();
+  },
+  exCo: () => extendRefresh(),
+  ciAt: () => ciDiff(),
+  coCalc: () => coCalc(),
+  fTime: () => { modalState.priceTouched = modalState.bookingId ? modalState.priceTouched : false; bookingRefresh(); },
+  fRoom: el => { if (el.type === 'radio') modalState.sel = new Set([el.value]); else el.checked ? modalState.sel.add(el.value) : modalState.sel.delete(el.value); bookingRefresh(); },
+  hCopy: el => { modalState.copyFrom = el.value || null; const src = el.value ? H(el.value) : null; if (src){ ['ci','co'].forEach(k => $('#h-' + k).value = src[k]); $('#h-onin').value = src.onIn; $('#h-onout').value = src.onOut; modalState.types = JSON.parse(JSON.stringify(src.types)); drawTypes(); } },
+  permAccess: el => { const ms = modalState; if (el.checked) ms.draft[ms.house] = ROLES.letan.p(); else delete ms.draft[ms.house]; drawPerms(); },
+  permCell: el => { const p = modalState.draft[modalState.house]; p[el.dataset.m][el.dataset.a] = el.checked; if (el.dataset.a !== 'xem' && el.checked && p[el.dataset.m].xem === false) p[el.dataset.m].xem = true; if (el.dataset.a === 'xem' && !el.checked) Object.keys(p[el.dataset.m]).forEach(a => p[el.dataset.m][a] = false); drawPerms(); },
+};
+document.addEventListener('change', e => { const el = e.target.closest('[data-chg]'); if (el && CHG[el.dataset.chg]) CHG[el.dataset.chg](el); });
+let qTimer = null;
+document.addEventListener('input', e => {
+  const el = e.target;
+  if (el.dataset.inp === 'calQ'){ clearTimeout(qTimer); qTimer = setTimeout(() => { ui.q = el.value; const pos = el.selectionStart; render(); const n = $('#calQ'); if (n){ n.focus(); try { n.setSelectionRange(pos, pos); } catch(_){} } }, 250); }
+  if (el.dataset.inp === 'fPrice') bookingRefresh();
+  if (el.dataset.inp === 'coCalc') coCalc();
+});
+const FORMS = {
+  login: () => signIn('login', { username: $('#l-user').value.trim().toLowerCase(), pin: $('#l-pin').value.trim() }, 'l-err'),
+  setup: () => {
+    const pin = $('#s-pin').value.trim(); if (!/^\d{6}$/.test(pin)) return errBox('s-err', 'Mã PIN phải gồm đúng 6 chữ số.');
+    signIn('setup', { code: $('#s-code').value.trim(), name: $('#s-name').value.trim(), username: $('#s-user').value.trim().toLowerCase(), pin }, 's-err');
+  },
+  confirm: () => {
+    const ms = modalState;
+    if (ms.typeText && $('#cf-text').value.trim() !== ms.typeText) return errBox('cf-err', 'Tên gõ chưa khớp.');
+    const extra = { reason: ($('#cx-reason') || {}).value || '', refund: !!document.querySelector('input[name="cx-dep"][value="refund"]:checked') };
+    const r = ms.confirmRes; closeModal(); r(extra);
+  },
+  booking: () => saveBooking(),
+  block: () => saveBlock(),
+  checkout: () => doCheckout(),
+  checkin: () => saveCheckin(),
+  extend: () => saveExtend(),
+  pay: () => { const amt = +$('#p-amt').value || 0; if (amt <= 0) return; call('pay', { id: modalState.id, amt, method: $('#p-method').value }); },
+  hknote: () => { const ms = modalState; call('hk', { houseId: ms.hid, roomId: ms.rid, op: ms.op, note: $('#hn-text').value.trim() }); },
+  house: () => saveHouse(),
+  times: form => {
+    const h = H(form.dataset.h); if (!can(h.id, 'caidat', 'sua')) return toast('Bạn không có quyền sửa cài đặt.', true);
+    call('saveTimes', { houseId: h.id, ci: form.ci.value, co: form.co.value, onIn: form.onIn.value, onOut: form.onOut.value, all: !!(form.all && form.all.checked) });
+  },
+  hkset: form => call('saveHkSettings', { prepH: +form.prepH.value, redM: +form.redM.value, autoIn: form.autoIn.checked }),
+  rooms: () => saveRooms(),
+  user: () => saveUser(),
+  perms: () => savePerms(),
+  pin: () => { const pin = $('#pn-pin').value.trim(); if (!/^\d{6}$/.test(pin)) return errBox('pn-err', 'Mã PIN phải gồm đúng 6 chữ số.'); call('resetPin', { userId: modalState.id, pin }, { err:'pn-err' }); },
+};
+document.addEventListener('submit', e => { e.preventDefault(); const f = FORMS[e.target.dataset.form]; if (f) f(e.target); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && $('#modal').childElementCount){ if (modalState && modalState.confirmRes) A.confirmNo(); else closeModal(); } });
+function applyTheme(){ if (ui.theme) document.documentElement.setAttribute('data-theme', ui.theme); else document.documentElement.removeAttribute('data-theme'); }
+
+/* ====== khởi động ====== */
+async function refresh(){
+  if (!TOKEN || !S || busy || drag || $('#modal').childElementCount || document.visibilityState !== 'visible' || (document.activeElement && document.activeElement.id === 'calQ')) return;
+  const r = await rpc('getData');
+  if (r.auth){ signOut(r.err); return; }
+  if (r.data && !busy && !drag && !$('#modal').childElementCount){ applyData(r.data); render(); }
+}
+(async () => {
+  let savedUI = null;
+  try { savedUI = JSON.parse(localStorage.getItem(UIKEY)); } catch(e){}
+  ui = { ...defaultUI(), ...(savedUI || {}), scrollNow: true };
+  applyTheme();
+  app.innerHTML = '<div class="empty" style="margin-top:20vh">Đang tải dữ liệu…</div>';
+  let local = ''; try { local = localStorage.getItem(TOKKEY) || ''; } catch(e){}
+  const fromUrl = await urlToken();
+  for (const t of [...new Set([local, fromUrl].filter(Boolean))]){
+    TOKEN = t;
+    const r = await rpc('getData');
+    if (r.data){ saveTok(); applyData(r.data); render(); if (ui.view === 'log') loadLogs(); break; }
+    TOKEN = '';
+  }
+  if (!TOKEN) saveTok();
+  if (!S){ const st = await rpc('status'); BOOT.needsSetup = !!st.needsSetup; if (st.err) BOOT.err = st.err; render(); if (st.err) toast(st.err, true); }
+  setInterval(refresh, 30000);
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') refresh(); });
+})();
+</script>
+
+</body>
+</html>
