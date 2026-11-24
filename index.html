@@ -11,7 +11,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="icon" type="image/png" href="icon-180.png">
-<script src="config.js?v=202611242313"></script><title>Sổ Phòng</title></head><body>
+<script src="config.js?v=202611242330"></script><title>Sổ Phòng</title></head><body>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -412,6 +412,9 @@ async function reload(){ const r = await rpc('getData'); if (r.auth) return sign
 /* Các lệnh lưu chạy lần lượt theo hàng đợi: bấm liên tiếp không bị mất lệnh nào. */
 let queue = Promise.resolve(), pending = 0;
 function call(action, payload, opts = {}){
+  // "Hiện ngay": sửa dữ liệu trên máy và đóng hộp thoại trước, máy chủ lưu phía sau.
+  // Nếu máy chủ báo lỗi thì hiện thông báo và tải lại dữ liệu thật.
+  if (opts.apply){ try { opts.apply(); } catch (e) {} opts.optimistic = true; closeModal(); render(); }
   pending++; busy = true; document.body.classList.add('busy');
   const btns = [...document.querySelectorAll('#modal button[type=submit]')]; btns.forEach(b => b.disabled = true);
   const p = queue.then(async () => {
@@ -419,9 +422,10 @@ function call(action, payload, opts = {}){
     pending--; if (!pending){ busy = false; document.body.classList.remove('busy'); }
     btns.forEach(b => b.disabled = false);
     if (r.auth){ signOut(r.err); return false; }
-    if (r.err){ if (opts.err && $('#' + opts.err)) errBox(opts.err, esc(r.err)); else { toast(r.err, true); if (opts.optimistic) reload(); } return false; }
-    if (!pending){ applyData(r.data); if (!opts.keepModal) closeModal(); if (!drag && (!$('#modal').childElementCount || !opts.keepModal)) render(); }
-    else if (!opts.optimistic) closeModal();
+    if (r.err){ if (!opts.optimistic && opts.err && $('#' + opts.err)) errBox(opts.err, esc(r.err)); else { toast('Chưa lưu được: ' + r.err, true); if (opts.optimistic) reload(); } return false; }
+    // Hộp thoại người dùng vừa mở trong lúc chờ lưu thì giữ nguyên, không đóng giùm.
+    if (!opts.optimistic) closeModal();
+    if (!pending){ applyData(r.data); if (!drag && !$('#modal').childElementCount) render(); }
     if (r.msg) toast(r.msg);
     if (opts.after) opts.after(r);
     return r;
@@ -1028,7 +1032,18 @@ function saveBooking(){
     source: v('f-source'), otaCode: (v('f-ota') || '').trim(), note: (v('f-note') || '').trim() };
   if ($('#f-name') && !$('#f-name').disabled){ pl.guestName = v('f-name').trim(); pl.guestPhone = v('f-phone').trim(); }
   if ($('#f-price') && !$('#f-price').disabled){ pl.price = +v('f-price') || 0; pl.deposit = +v('f-deposit') || 0; }
-  call('saveBooking', pl, { err:'f-err' });
+  const apply = () => {
+    const guest = g => ({ ...g, adults: pl.adults, children: pl.children, ...(pl.guestName !== undefined ? { name: pl.guestName, phone: pl.guestPhone } : {}) });
+    if (b){
+      Object.assign(b, { kind, roomId: rooms[0], source: pl.source, otaCode: pl.otaCode, note: pl.note, guest: guest(b.guest) });
+      if (b.status === 'booked') b.ci = ci;
+      if (b.status !== 'checkedout') b.co = co;
+      if (f.aci) b.aci = f.aci; if (f.aco) b.aco = f.aco;
+      if (pl.price !== undefined){ b.price = pl.price; b.deposit = pl.deposit; }
+    } else rooms.forEach(rid => S.bookings.push({ id: 'tmp' + uid(), houseId: h.id, roomId: rid, groupId: '', kind, status: 'booked', ci, co, aci: null, aco: null,
+      guest: guest({ name: '', phone: '' }), source: pl.source, otaCode: pl.otaCode, note: pl.note, price: pl.price || 0, deposit: pl.deposit || 0, payments: [] }));
+  };
+  call('saveBooking', pl, { apply });
 }
 function openBlockForm(bookingId){
   const b = bookingId ? S.bookings.find(x => x.id === bookingId) : null;
@@ -1053,7 +1068,11 @@ function saveBlock(){
   const cand = { id: b ? b.id : 'new', roomId: rid, houseId: hid, ci, co, status:'block' };
   const cl = conflicts(cand); if (cl.length) return errBox('k-err', 'Phòng đã có khách trong khoảng này: ' + cl.map(o => esc(guestName(o)) + ' ' + fDT(span(o)[0])).join(', '));
   const note = $('#k-note').value.trim();
-  call('saveBlock', { id: b ? b.id : '', houseId: hid, roomId: rid, ci, co, note, setHk: !b && $('#k-hk').checked }, { err:'k-err' });
+  const setHk = !b && $('#k-hk').checked;
+  call('saveBlock', { id: b ? b.id : '', houseId: hid, roomId: rid, ci, co, note, setHk }, { apply: () => {
+    if (b) Object.assign(b, { ci, co, note });
+    else { S.bookings.push({ id: 'tmp' + uid(), houseId: hid, roomId: rid, groupId: '', kind: 'khoa', status: 'block', ci, co, aci: null, aco: null, guest: { name: '', phone: '', adults: 0, children: 0 }, source: '', otaCode: '', price: 0, deposit: 0, payments: [], note }); if (setHk){ r.hk = 'baotri'; if (note) r.hkNote = note; } }
+  } });
 }
 function openBooking(id){
   const b = S.bookings.find(x => x.id === id); if (!b) return;
@@ -1124,7 +1143,8 @@ function saveCheckin(){
   const cl = conflicts({ ...b, status:'inhouse', aci: t });
   if (cl.length) return errBox('ci-err', `Trùng với ${cl[0].kind === 'khoa' ? 'khóa phòng' : esc(guestName(cl[0]))} (${fDT(span(cl[0])[0])} → ${fDT(span(cl[0])[1])}).`);
   const pr = $('#ci-price');
-  call('checkin', { id: b.id, at: t, price: pr && !pr.disabled ? (+pr.value || 0) : null }, { err:'ci-err' });
+  const price = pr && !pr.disabled ? (+pr.value || 0) : null;
+  call('checkin', { id: b.id, at: t, price }, { apply: () => { Object.assign(b, { status: 'inhouse', aci: t, autoIn: false }); if (price !== null) b.price = price; } });
 }
 function openCheckout(id){
   const b = S.bookings.find(x => x.id === id), h = H(b.houseId), r = RM(h, b.roomId), now = Date.now();
@@ -1155,8 +1175,12 @@ function doCheckout(){
   if (!(t > b.aci)) return errBox('co-err', 'Giờ trả phải sau giờ nhận thực tế ' + fDT(b.aci) + '.');
   if (t > now + 5*MIN) return errBox('co-err', 'Giờ trả thực tế không thể sau thời điểm hiện tại.');
   const pr = $('#co-price');
-  call('checkout', { id: b.id, at: t, price: pr && !pr.disabled ? (+pr.value || 0) : null,
-    amt: $('#co-amt') ? +$('#co-amt').value || 0 : 0, method: $('#co-method') ? $('#co-method').value : '' }, { err:'co-err' });
+  const price = pr && !pr.disabled ? (+pr.value || 0) : null, amt = $('#co-amt') ? +$('#co-amt').value || 0 : 0, method = $('#co-method') ? $('#co-method').value : '';
+  call('checkout', { id: b.id, at: t, price, amt, method }, { apply: () => {
+    Object.assign(b, { status: 'checkedout', aco: t }); if (price !== null) b.price = price;
+    if (amt > 0) b.payments.push({ amt, method, at: Date.now(), by: me.name });
+    Object.assign(r, { hk: 'ban', hkBy: '', hkStart: null, hkEnd: null });
+  } });
 }
 function openExtend(id){
   const b = S.bookings.find(x => x.id === id), h = H(b.houseId), r = RM(h, b.roomId);
@@ -1192,7 +1216,8 @@ function saveExtend(){
   if (!(co > (b.aci || b.ci))) return errBox('ex-err', 'Giờ trả phải sau giờ nhận phòng.');
   const cl = conflicts({ ...b, co });
   if (cl.length) return errBox('ex-err', `Không gia hạn được: trùng với ${cl[0].kind === 'khoa' ? 'khóa phòng' : esc(guestName(cl[0]))} lúc ${fDT(span(cl[0])[0])}. Hãy chọn giờ sớm hơn hoặc đổi phòng.`);
-  call('extend', { id: b.id, co, price: $('#ex-price') ? (+$('#ex-price').value || 0) : null }, { err:'ex-err' });
+  const price = $('#ex-price') ? (+$('#ex-price').value || 0) : null;
+  call('extend', { id: b.id, co, price }, { apply: () => { b.co = co; if (price !== null) b.price = price; } });
 }
 function openPay(id){
   const b = S.bookings.find(x => x.id === id), h = H(b.houseId);
@@ -1210,13 +1235,13 @@ async function cancelBk(id, noshow){
       <label class="f">Lý do<input id="cx-reason" maxlength="100"></label>
       ${hasDep ? `<div class="checks"><label><input type="radio" name="cx-dep" value="keep" checked>Giữ cọc ${money(b.deposit)}</label><label><input type="radio" name="cx-dep" value="refund">Hoàn cọc cho khách</label></div>` : ''}`, ok: noshow ? 'Không đến' : 'Hủy lượt đặt', danger:true });
   if (!ok) return;
-  call('cancel', { id, noshow: !!noshow, reason: ok.reason, refund: ok.refund });
+  call('cancel', { id, noshow: !!noshow, reason: ok.reason, refund: ok.refund }, { apply: () => { Object.assign(b, { status: noshow ? 'noshow' : 'cancelled', aci: null, autoIn: false }); } });
 }
 async function delBk(id){
   const b = S.bookings.find(x => x.id === id), h = H(b.houseId), r = RM(h, b.roomId);
   const ok = await confirmBox({ title: b.kind === 'khoa' ? 'Mở khóa phòng' : 'Xóa lượt đặt', html:`<p>${b.kind === 'khoa' ? `Bỏ khóa phòng ${esc(r.name)}.` : `Xóa hẳn lượt đặt của <b>${esc(guestName(b))}</b>, phòng ${esc(r.name)}. Nên dùng “Hủy” nếu muốn giữ lại lịch sử.`}</p>`, ok: b.kind === 'khoa' ? 'Mở khóa' : 'Xóa', danger:true });
   if (!ok) return;
-  call('delBooking', { id });
+  call('delBooking', { id }, { apply: () => { S.bookings = S.bookings.filter(x => x.id !== id); if (b.kind === 'khoa' && r.hk === 'baotri') r.hk = 'ban'; } });
 }
 
 /* ---- dọn phòng ---- */
@@ -1278,7 +1303,8 @@ function saveHouse(){
   if ($('#h-bank')) data.bank = { name: v('h-bank').trim(), acc: v('h-acc').trim(), holder: v('h-holder').trim().toUpperCase() };
   if ($('#h-types')) data.types = ms.types;
   if (!ms.id && ms.copyFrom) data.copyFrom = ms.copyFrom;
-  call('saveHouse', { id: ms.id || '', ...data }, { err:'h-err', after: r => { if (!ms.id && r.id){ ui.house = r.id; render(); } } });
+  if (ms.id){ const h = H(ms.id); call('saveHouse', { id: ms.id, ...data }, { apply: () => { const { copyFrom, ...rest } = data; Object.assign(h, rest); } }); }
+  else call('saveHouse', { id: '', ...data }, { err:'h-err', after: r => { if (r.id){ ui.house = r.id; render(); } } });
 }
 function openRooms(id){
   const h = H(id); if (!can(id, 'caidat', 'sua')) return toast('Bạn không có quyền sửa phòng.', true);
@@ -1305,7 +1331,11 @@ function saveRooms(){
   const removed = h.rooms.filter(r => !list.find(x => x.id === r.id));
   if (removed.length && !can(h.id, 'caidat', 'xoa')) return errBox('rm-err', 'Bạn không có quyền xóa phòng.');
   const known = new Set(h.rooms.map(r => r.id));
-  call('saveRooms', { houseId: h.id, rooms: list.map(x => ({ id: known.has(x.id) ? x.id : '', name: x.name, floor: x.floor, typeId: x.typeId })) }, { err:'rm-err' });
+  call('saveRooms', { houseId: h.id, rooms: list.map(x => ({ id: known.has(x.id) ? x.id : '', name: x.name, floor: x.floor, typeId: x.typeId })) }, { apply: () => {
+    const old = Object.fromEntries(h.rooms.map(r => [r.id, r]));
+    h.rooms = list.map(x => old[x.id] ? Object.assign(old[x.id], { name: x.name, floor: x.floor, typeId: x.typeId })
+      : { id: x.id, name: x.name, floor: x.floor, typeId: x.typeId, hk: 'sach', hkBy: '', hkStart: null, hkEnd: null, hkDoneAt: Date.now(), hkNote: '', assignee: '', dnd: false });
+  } });
 }
 async function archiveHouse(id){
   const h = H(id), now = Date.now();
@@ -1402,7 +1432,7 @@ document.addEventListener('pointerup', e => {
   if (!can(h.id, 'lich', 'sua')){ toast('Bạn không có quyền sửa lịch.', true); return render(); }
   const cl = conflicts(cand);
   if (cl.length){ toast(`Không đổi được: trùng lịch với ${cl[0].kind === 'khoa' ? 'khóa phòng' : guestName(cl[0])} (${fDT(span(cl[0])[0])}).`, true); return render(); }
-  call('move', { id: b.id, roomId: cand.roomId, ci: cand.ci, co: cand.co }).then(r => { if (!r) render(); });
+  call('move', { id: b.id, roomId: cand.roomId, ci: cand.ci, co: cand.co }, { apply: () => Object.assign(b, { roomId: cand.roomId, ci: cand.ci, co: cand.co }) });
 });
 
 /* ====== sự kiện ====== */
@@ -1547,12 +1577,13 @@ const FORMS = {
   checkout: () => doCheckout(),
   checkin: () => saveCheckin(),
   extend: () => saveExtend(),
-  pay: () => { const amt = +$('#p-amt').value || 0; if (amt <= 0) return; call('pay', { id: modalState.id, amt, method: $('#p-method').value }); },
+  pay: () => { const amt = +$('#p-amt').value || 0, method = $('#p-method').value, b = S.bookings.find(x => x.id === modalState.id); if (amt <= 0) return; call('pay', { id: b.id, amt, method }, { apply: () => b.payments.push({ amt, method, at: Date.now(), by: me.name }) }); },
   hknote: () => { const ms = modalState; call('hk', { houseId: ms.hid, roomId: ms.rid, op: ms.op, note: $('#hn-text').value.trim() }); },
   house: () => saveHouse(),
   times: form => {
     const h = H(form.dataset.h); if (!can(h.id, 'caidat', 'sua')) return toast('Bạn không có quyền sửa cài đặt.', true);
-    call('saveTimes', { houseId: h.id, ci: form.ci.value, co: form.co.value, onIn: form.onIn.value, onOut: form.onOut.value, all: !!(form.all && form.all.checked) });
+    const v = { ci: form.ci.value, co: form.co.value, onIn: form.onIn.value, onOut: form.onOut.value }, all = !!(form.all && form.all.checked);
+    call('saveTimes', { houseId: h.id, ...v, all }, { apply: () => (all ? myHouses() : [h]).forEach(x => Object.assign(x, v)) });
   },
   hkset: form => call('saveHkSettings', { prepH: +form.prepH.value, redM: +form.redM.value, autoIn: form.autoIn.checked }),
   rooms: () => saveRooms(),
