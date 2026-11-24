@@ -11,7 +11,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="icon" type="image/png" href="icon-180.png">
-<script src="config.js?v=202611242221"></script><title>Sổ Phòng</title></head><body>
+<script src="config.js?v=202611242259"></script><title>Sổ Phòng</title></head><body>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -204,6 +204,18 @@ label.f > input,label.f > select,label.f > textarea{color:var(--ink);font-size:1
 @keyframes blink{50%{filter:brightness(1.18)}}
 @media (prefers-reduced-motion: reduce){.bar.st-late{animation:none}}
 .daylist .li{align-items:flex-start}
+/* lịch toàn màn hình (điện thoại) */
+.calfull{position:fixed;inset:0;z-index:40;background:var(--bg);display:flex;flex-direction:column;
+  padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px)}
+.calfull .cal-tools{flex:0 0 auto;margin:0;padding:6px 8px;gap:6px;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;border-bottom:1px solid var(--line);background:var(--surface)}
+.calfull .cal-tools .range{min-width:0;white-space:nowrap;font-size:13px}
+.calfull .seg button{padding:5px 8px;min-height:32px}
+.calfull .cal-scroll{flex:1 1 auto;max-height:none;border:0;border-radius:0}
+.calfull .cal-name{padding:0 5px;gap:5px}
+.calfull .cal-name b{font-size:14px}
+.calfull .cal-day{font-size:11px} .calfull .cal-day b{font-size:12px}
+.calfull .bar{padding:0 4px;font-size:11px}
+html.noscroll,html.noscroll body{overflow:hidden}
 
 /* dọn phòng */
 .hk-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px}
@@ -496,9 +508,10 @@ function render(){
   ${S.sample ? `<div class="banner"><span><b>Bản xem trước · dữ liệu mẫu.</b> Thay đổi chỉ lưu trên máy này. Bản thật sẽ lưu trên Google Sheet để mọi người dùng chung.</span><span class="grow"></span><button class="btn sm" data-act="resetSample">Đặt lại dữ liệu mẫu</button>${me.isOwner ? '<button class="btn sm danger" data-act="clearSample">Xóa dữ liệu mẫu</button>' : ''}</div>` : ''}
   <nav class="tabs">${tabs.map(t => `<button class="tab" data-act="view" data-v="${t.k}"${ui.view === t.k ? ' aria-current="page"' : ''}>${ICON[t.k]}<span>${t.n}</span></button>`).join('')}</nav>
   <main id="main">${(VIEWS[ui.view] || vNone)()}</main>`;
+  document.documentElement.classList.toggle('noscroll', ui.view === 'cal' && !!ui.calFull);
   const sc2 = $('.cal-scroll');
   if (sc2){
-    if (ui.scrollNow){ const x = (Date.now() - ui.calStart) / HOUR * (DAYW[ui.calDays] / 24) - 140; sc2.scrollLeft = Math.max(0, x); ui.scrollNow = false; }
+    if (ui.scrollNow){ const x = (Date.now() - ui.calStart) / HOUR * (dayWidth(ui.calDays) / 24) - (ui.calFull ? 40 : 140); sc2.scrollLeft = Math.max(0, x); ui.scrollNow = false; }
     else { sc2.scrollLeft = ui.calSL || 0; sc2.scrollTop = ui.calST || 0; }
   }
   saveUI();
@@ -585,19 +598,39 @@ function vToday(){
 }
 
 /* ====== LỊCH ====== */
-const DAYW = { 1:1152, 7:132, 14:80, 30:46 };
-const NAMEW = 104, ROWH = 46;
+const DAYW = { 1:1152, 3:240, 7:132, 14:80, 30:46 };
+let NAMEW = 104; const ROWH = 46;
+const isPhone = () => window.innerWidth < 720;
+/** Độ rộng 1 ngày trên lịch. Ở chế độ toàn màn hình trên điện thoại: 3 và 7 ngày vừa khít bề ngang màn hình. */
+function dayWidth(days){
+  if (!ui.calFull) return DAYW[days] || 132;
+  const fit = Math.floor((window.innerWidth - NAMEW - 2) / days);
+  if (days === 1) return Math.max(fit, 24 * 30);
+  if (days === 3) return Math.max(fit, 90);
+  if (days === 7) return Math.max(fit, 42);
+  return Math.max(Math.min(fit, DAYW[days] || 80), 40);
+}
 function vCal(){
   const hs = housesWith('lich'); if (!hs.length) return vNone();
+  NAMEW = ui.calFull && isPhone() ? 66 : 104;
+  if (ui.calFull && ui.calMode === 'list') ui.calMode = 'grid';
   const days = ui.calDays, start = ui.calStart, end = start + days*DAY;
   const canAdd = hs.some(h => can(h.id, 'datphong', 'them'));
   const canBlock = hs.some(h => can(h.id, 'lich', 'them'));
   const floors = [...new Set(hs.flatMap(h => h.rooms.map(r => r.floor)))].sort((a, b) => a - b);
   const rangeLbl = days === 1 ? `${WD[new Date(start).getDay()]} ${fDY(start)}` : `${fD(start)} – ${fDY(end - DAY)}`;
-  const tools = `<div class="cal-tools">
+  const tools = ui.calFull ? `<div class="cal-tools">
+    <div class="seg"><button data-act="calMove" data-d="-1" aria-label="Lùi">‹</button><button data-act="calToday">Nay</button><button data-act="calMove" data-d="1" aria-label="Tới">›</button></div>
+    <span class="range small">${days === 1 ? `${WD[new Date(start).getDay()]} ${fD(start)}` : `${fD(start)}–${fD(end - DAY)}`}</span>
+    <div class="seg">${[1,3,7,14].map(d => `<button data-act="calDays" data-d="${d}" class="${days === d ? 'on' : ''}">${d}N</button>`).join('')}</div>
+    <span class="grow"></span>
+    ${canAdd ? '<button class="btn primary sm" data-act="newBk" aria-label="Đặt phòng">+ Đặt</button>' : ''}
+    <button class="btn sm" data-act="calFull" aria-label="Thoát toàn màn hình">✕</button>
+  </div>` : `<div class="cal-tools">
     <div class="seg"><button data-act="calMove" data-d="-1" aria-label="Lùi">‹</button><button data-act="calToday">Hôm nay</button><button data-act="calMove" data-d="1" aria-label="Tới">›</button></div>
     <span class="range">${rangeLbl}</span>
-    <div class="seg">${[1,7,14,30].map(d => `<button data-act="calDays" data-d="${d}" class="${days === d ? 'on' : ''}">${d === 1 ? '1 ngày' : d + ' ngày'}</button>`).join('')}</div>
+    <div class="seg">${[1,3,7,14,30].map(d => `<button data-act="calDays" data-d="${d}" class="${days === d ? 'on' : ''}">${d === 1 ? '1 ngày' : d + ' ngày'}</button>`).join('')}</div>
+    <button class="btn" data-act="calFull">Toàn màn hình</button>
     <div class="seg"><button data-act="calMode" data-m="grid" class="${ui.calMode === 'grid' ? 'on' : ''}">Lưới</button><button data-act="calMode" data-m="list" class="${ui.calMode === 'list' ? 'on' : ''}">Danh sách</button></div>
     <input id="calQ" data-inp="calQ" placeholder="Tìm tên, SĐT, mã đặt" value="${esc(ui.q)}" style="width:190px" aria-label="Tìm lượt đặt">
     <select data-chg="floor" aria-label="Lọc tầng"><option value="">Mọi tầng</option>${floors.map(f => `<option value="${f}"${String(ui.floor) === String(f) ? ' selected' : ''}>Tầng ${f}</option>`).join('')}</select>
@@ -610,7 +643,7 @@ function vCal(){
    <span>·</span>${Object.entries(HK).map(([k, v]) => `<span class="hk-${k}"><span class="dot" style="display:inline-block;margin-right:4px"></span><span class="muted">${v}</span></span>`).join('')}
    <span class="muted">· Kéo thả thanh để đổi phòng hoặc ngày, kéo mép phải để gia hạn (trên máy tính)</span></div>`;
   if (ui.calMode === 'list') return tools + vCalList(hs);
-  const dayW = DAYW[days], pph = dayW / 24, W = days * dayW, now = Date.now(), T = sod(now);
+  const dayW = dayWidth(days), pph = dayW / 24, W = days * dayW, now = Date.now(), T = sod(now);
   let head = `<div class="cal-head"><div class="cal-corner">Phòng</div>`;
   if (days === 1){ for (let h = 0; h < 24; h++) head += `<div class="cal-day" style="width:${pph}px"><b>${pad(h)}h</b></div>`; }
   else for (let i = 0; i < days; i++){ const d = start + i*DAY, wd = new Date(d).getDay(); head += `<div class="cal-day ${d === T ? 'today' : ''} ${wd === 0 || wd === 6 ? 'wkend' : ''}" style="width:${dayW}px">${WD[wd]}<b>${days === 30 ? new Date(d).getDate() : fD(d)}</b></div>`; }
@@ -642,7 +675,8 @@ function vCal(){
   }
   const todayCol = days > 1 && T >= start && T < end ? `<div class="today-col" style="left:${NAMEW + (T - start) / HOUR * pph}px;width:${dayW}px"></div>` : '';
   const nowLine = now >= start && now < end ? `<div class="now-line" data-t="${fT(now)}" style="left:${NAMEW + (now - start) / HOUR * pph}px"></div>` : '';
-  return tools + `<div class="cal-scroll" style="--namew:${NAMEW}px;--rowh:${ROWH}px"><div class="cal-inner" style="width:${NAMEW + W}px">${head}<div style="position:relative">${todayCol}${nowLine}${rows || '<div class="empty" style="margin:12px">Không có phòng nào khớp bộ lọc.</div>'}</div></div></div>`;
+  const grid = `<div class="cal-scroll" style="--namew:${NAMEW}px;--rowh:${ROWH}px"><div class="cal-inner" style="width:${NAMEW + W}px">${head}<div style="position:relative">${todayCol}${nowLine}${rows || '<div class="empty" style="margin:12px">Không có phòng nào khớp bộ lọc.</div>'}</div></div></div>`;
+  return ui.calFull ? `<div class="calfull">${tools}${grid}</div>` : tools + grid;
 }
 const roomCmp = (a, b) => a.floor - b.floor || a.name.localeCompare(b.name, 'vi', { numeric:true });
 function groupRooms(h, rooms){
@@ -1350,7 +1384,7 @@ document.addEventListener('pointerup', e => {
   if (!drag) return; const d = drag; drag = null;
   if (!d.moved) return;
   suppressUntil = Date.now() + 350;
-  const b = d.b, h = H(b.houseId), pph = DAYW[ui.calDays] / 24, dx = e.clientX - d.x0;
+  const b = d.b, h = H(b.houseId), pph = dayWidth(ui.calDays) / 24, dx = e.clientX - d.x0;
   const raw = dx / pph * HOUR, step = ui.calDays === 1 ? 30*MIN : DAY, shift = Math.round(raw / step) * step;
   const cand = { ...b };
   if (d.mode === 'move'){
@@ -1367,7 +1401,7 @@ document.addEventListener('pointerup', e => {
 
 /* ====== sự kiện ====== */
 const A = {
-  view: d => { ui.view = d.v; if (d.v === 'cal') ui.scrollNow = true; render(); window.scrollTo(0, 0); if (d.v === 'log') loadLogs(); },
+  view: d => { ui.view = d.v; if (d.v === 'cal'){ ui.scrollNow = true; if (isPhone()){ if (!ui.calFullSeen){ ui.calDays = 3; ui.calStart = sod(Date.now()) - DAY; ui.calFullSeen = true; } ui.calFull = true; } } render(); window.scrollTo(0, 0); if (d.v === 'log') loadLogs(); },
   logout: () => { rpc('logout'); TOKEN = ''; saveTok(); S = null; me = null; ui.house = 'all'; saveUI(); render(); },
   theme: () => { ui.theme = ui.theme === '' ? (matchMedia('(prefers-color-scheme: dark)').matches ? 'light' : 'dark') : ui.theme === 'dark' ? 'light' : 'dark'; applyTheme(); render(); savePrefs(); },
   close: () => closeModal(),
@@ -1382,7 +1416,7 @@ const A = {
   listToday: () => { ui.listDay = sod(Date.now()); render(); },
   calNew: (d, el, e) => {
     if (!can(d.house, 'datphong', 'them')) return;
-    const pph = DAYW[ui.calDays] / 24, x = e.clientX - el.getBoundingClientRect().left;
+    const pph = dayWidth(ui.calDays) / 24, x = e.clientX - el.getBoundingClientRect().left;
     let t = ui.calStart + x / pph * HOUR;
     if (ui.calDays === 1) t = Math.floor(t / (30*MIN)) * 30*MIN; else t = sod(t);
     const h = H(d.house);
@@ -1405,6 +1439,7 @@ const A = {
   delBk: d => delBk(d.id),
   // dọn phòng
   hk: d => hkOp(d.op, d.h, d.r),
+  calFull: () => { ui.calFull = !ui.calFull; if (ui.calFull && isPhone() && ui.calDays > 14) ui.calDays = 7; ui.scrollNow = true; render(); },
   setTheme: d => { ui.theme = d.v; applyTheme(); render(); savePrefs(); },
   repP: d => { ui.repP = d.p; if (d.p === 'custom' && !ui.repFrom){ const T = sod(Date.now()); ui.repFrom = ymd(T - 29*DAY); ui.repTo = ymd(T); } render(); },
   hkMine: () => { ui.hkMine = !ui.hkMine; render(); },
@@ -1510,6 +1545,8 @@ const FORMS = {
 };
 document.addEventListener('submit', e => { e.preventDefault(); const f = FORMS[e.target.dataset.form]; if (f) f(e.target); });
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && $('#modal').childElementCount){ if (modalState && modalState.confirmRes) A.confirmNo(); else closeModal(); } });
+let resizeTimer = null;
+window.addEventListener('resize', () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(() => { if (S && me && ui.view === 'cal' && ui.calFull && !drag && !$('#modal').childElementCount) render(); }, 250); });
 function applyTheme(){ if (ui.theme) document.documentElement.setAttribute('data-theme', ui.theme); else document.documentElement.removeAttribute('data-theme'); }
 
 /* ====== khởi động ====== */
