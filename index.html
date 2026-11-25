@@ -11,7 +11,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="icon" type="image/png" href="icon-180.png">
-<script src="config.js?v=202611242330"></script><title>Sổ Phòng</title></head><body>
+<script src="config.js?v=202611251540"></script><title>Sổ Phòng</title></head><body>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -115,8 +115,8 @@ label.f > input,label.f > select,label.f > textarea{color:var(--ink);font-size:1
 .card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px}
 .sec-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:18px 0 8px}
 .sec-head:first-child{margin-top:0}
-.tiles{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px;margin-bottom:14px}
-@media (max-width:900px){.tiles{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-bottom:14px}
+@media (max-width:520px){.tiles{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .tile{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px;cursor:default}
 .tile b{display:block;font-family:var(--f-display);font-size:26px;line-height:1.1;font-variant-numeric:tabular-nums}
 .tile span{font-size:12px;color:var(--muted)}
@@ -426,7 +426,7 @@ function call(action, payload, opts = {}){
     // Hộp thoại người dùng vừa mở trong lúc chờ lưu thì giữ nguyên, không đóng giùm.
     if (!opts.optimistic) closeModal();
     if (!pending){ applyData(r.data); if (!drag && !$('#modal').childElementCount) render(); }
-    if (r.msg) toast(r.msg);
+    if (r.msg && !opts.optimistic) toast(r.msg);
     if (opts.after) opts.after(r);
     return r;
   });
@@ -456,8 +456,10 @@ const SOURCES = ['Trực tiếp','Điện thoại','Zalo','Booking','Agoda','Air
 const METHODS = ['Tiền mặt','Chuyển khoản','Quẹt thẻ','OTA đã thu'];
 const HK = { sach:'Sạch', ban:'Bẩn', dangdon:'Đang dọn', chokiem:'Chờ kiểm tra', baotri:'Bảo trì' };
 const isActive = b => b.status !== 'cancelled' && b.status !== 'noshow';
-const overdue = b => b.status === 'inhouse' && Date.now() > b.co;
-function span(b){ const now = Date.now(); const s = b.aci || b.ci; let e = b.co; if (b.status === 'checkedout') e = b.aco || b.co; else if (b.status === 'inhouse' && now > b.co) e = now; return [s, e]; }
+// Bật "tự trả phòng" thì không có khái niệm quá giờ: hết giờ là coi như đã trả.
+const autoOutOn = () => !S || !S.settings || S.settings.autoOut !== false;
+const overdue = b => b.status === 'inhouse' && Date.now() > b.co && !autoOutOn();
+function span(b){ const now = Date.now(); const s = b.aci || b.ci; let e = b.co; if (b.status === 'checkedout') e = b.aco || b.co; else if (b.status === 'inhouse' && now > b.co && !autoOutOn()) e = now; return [s, e]; }
 function conflicts(c){ const [s, e] = span(c); return S.bookings.filter(o => o.id !== c.id && o.roomId === c.roomId && isActive(o)).filter(o => { const [os, oe] = span(o); return s < oe && os < e; }); }
 function stCls(b){ if (b.kind === 'khoa') return 'st-block'; if (b.status === 'cancelled') return 'st-cancel'; if (b.status === 'noshow') return 'st-noshow'; if (b.status === 'checkedout') return 'st-out'; if (overdue(b)) return 'st-late'; if (b.status === 'inhouse') return 'st-in'; return 'st-booked'; }
 function stName(b){ if (b.kind === 'khoa') return 'Khóa phòng'; return { booked:'Đã đặt', inhouse: overdue(b) ? 'Quá giờ trả' : 'Đang ở', checkedout:'Đã trả phòng', cancelled:'Đã hủy', noshow:'Không đến' }[b.status]; }
@@ -562,7 +564,7 @@ function vToday(){
   const bs = S.bookings.filter(b => ids.has(b.houseId));
   const inhouse = bs.filter(b => b.status === 'inhouse');
   const arrivals = bs.filter(b => b.status === 'booked' && b.ci < E).sort((a, b) => a.ci - b.ci);
-  const departures = inhouse.filter(b => b.co < E && !overdue(b)).sort((a, b) => a.co - b.co);
+  const departures = inhouse.filter(b => b.co < E && !overdue(b) && (b.co > now || !autoOutOn())).sort((a, b) => a.co - b.co);
   const over = inhouse.filter(overdue).sort((a, b) => a.co - b.co);
   const blocks = bs.filter(b => b.kind === 'khoa' && b.status === 'block' && b.ci <= now && b.co > now);
   const rooms = hs.flatMap(h => h.rooms.map(r => ({ h, r })));
@@ -592,7 +594,7 @@ function vToday(){
     <div class="tile"><b>${inhouse.length}</b><span>Đang có khách</span></div>
     <div class="tile"><b>${arrivals.length}</b><span>Khách sắp đến</span></div>
     <div class="tile"><b>${departures.length}</b><span>Khách sắp trả</span></div>
-    <div class="tile ${over.length ? 'warn' : ''}"><b>${over.length}</b><span>Quá giờ trả</span></div>
+    ${autoOutOn() ? '' : `<div class="tile ${over.length ? 'warn' : ''}"><b>${over.length}</b><span>Quá giờ trả</span></div>`}
     <div class="tile ${dirty.length ? 'warn' : ''} ${hkH.length ? 'go' : ''}" ${hkH.length ? 'data-act="view" data-v="hk"' : ''}><b>${dirty.length}</b><span>Phòng cần dọn${hkH.length ? ' →' : ''}</span></div>
   </div>
   ${over.length ? `<div class="card" style="border-color:var(--st-late);margin-bottom:14px"><div class="sec-head" style="margin-top:0"><h3 class="red">Quá giờ trả phòng</h3></div><div class="list">${over.map(b => depRow(b, true)).join('')}</div></div>` : ''}
@@ -864,6 +866,7 @@ function vSettings(){
       <label class="f">Báo “sắp trả phòng” trước (giờ)<input type="number" name="prepH" min="1" max="12" value="${st.prepH}" required></label>
       <label class="f">Thẻ phòng chuyển đỏ khi khách mới đến trong (phút)<input type="number" name="redM" min="10" max="240" step="5" value="${st.redM}" required></label>
       <label class="row" style="grid-column:1/-1"><input type="checkbox" name="autoIn" ${st.autoIn !== false ? 'checked' : ''}> Tự chuyển sang “Đang ở” khi đến giờ nhận phòng (không cần bấm Nhận phòng)</label>
+      <label class="row" style="grid-column:1/-1"><input type="checkbox" name="autoOut" ${st.autoOut !== false ? 'checked' : ''}> Tự chuyển sang “Đã trả phòng” khi hết giờ (không hiện quá giờ; khách ở thêm thì bấm Gia hạn)</label>
     </div><div class="row" style="margin-top:10px"><span class="grow"></span><button class="btn primary" type="submit">Lưu</button></div></form>` : ''}
     <div class="sec-head"><h2>Giao diện trên máy này</h2></div>
     <div class="card row"><span class="grow">Chế độ màu</span><div class="seg">${[['', 'Theo máy'], ['light', 'Sáng'], ['dark', 'Tối']].map(([v, n]) => `<button data-act="setTheme" data-v="${v}" class="${ui.theme === v ? 'on' : ''}">${n}</button>`).join('')}</div></div>`;
@@ -1094,13 +1097,14 @@ function openBooking(id){
   if (canE && b.status === 'inhouse') acts.push(`<button class="btn primary" data-act="checkout" data-id="${b.id}">Trả phòng</button>`);
   if (canPay && (b.status === 'inhouse' || b.status === 'booked' || (b.status === 'checkedout' && remain > 0))) acts.push(`<button class="btn" data-act="addPay" data-id="${b.id}">Thu tiền</button>`);
   if (canE && (b.status === 'booked' || b.status === 'inhouse')) acts.push(`<button class="btn" data-act="extend" data-id="${b.id}">Gia hạn</button>`, `<button class="btn" data-act="editBk" data-id="${b.id}">${b.status === 'inhouse' ? 'Sửa giờ / tiền / phòng' : 'Sửa / đổi phòng'}</button>`);
+  if (canE && b.status === 'checkedout' && b.autoOut) acts.push(`<button class="btn primary" data-act="extend" data-id="${b.id}">Khách ở thêm (gia hạn)</button>`);
   if (canE && b.status === 'checkedout') acts.push(`<button class="btn" data-act="editBk" data-id="${b.id}">Sửa giờ thực tế / tiền</button>`);
   if (canE && b.status === 'inhouse' && b.autoIn) acts.push(`<button class="btn" data-act="checkin" data-id="${b.id}">Xác nhận giờ đến</button>`);
   if (canE && (b.status === 'booked' || (b.status === 'inhouse' && b.autoIn))) acts.push(`<button class="btn" data-act="cancelBk" data-id="${b.id}">Hủy</button>`, `<button class="btn" data-act="noshowBk" data-id="${b.id}">Không đến</button>`);
   if (canX) acts.push(`<button class="btn danger" data-act="delBk" data-id="${b.id}">Xóa</button>`);
   openModal(`${mHead(`Phòng ${esc(r.name)} · ${esc(guestName(b))}`)}
    <div class="modal-b">
-     <div class="row"><span class="pill ${stCls(b)}">${stName(b)}</span>${b.autoIn ? '<span class="chip" title="App tự nhận phòng khi đến giờ đã đặt. Khách đến giờ khác thì bấm “Xác nhận giờ đến”; khách không đến thì bấm “Không đến”.">Tự nhận phòng đúng giờ đặt</span>' : ''}<span class="chip">${BKIND[b.kind]}</span><span class="chip">${esc(b.source)}${b.otaCode ? ' · ' + esc(b.otaCode) : ''}</span><span class="muted small">${esc(h.name)}</span></div>
+     <div class="row"><span class="pill ${stCls(b)}">${stName(b)}</span>${b.autoIn ? '<span class="chip" title="App tự nhận phòng khi đến giờ đã đặt. Khách đến giờ khác thì bấm “Xác nhận giờ đến”; khách không đến thì bấm “Không đến”.">Tự nhận phòng đúng giờ đặt</span>' : ''}${b.autoOut ? '<span class="chip" title="App tự trả phòng khi hết giờ. Khách còn ở thì bấm “Khách ở thêm (gia hạn)”.">Tự trả phòng khi hết giờ</span>' : ''}<span class="chip">${BKIND[b.kind]}</span><span class="chip">${esc(b.source)}${b.otaCode ? ' · ' + esc(b.otaCode) : ''}</span><span class="muted small">${esc(h.name)}</span></div>
      <dl class="kv">
        <dt>Nhận phòng</dt><dd><b class="t">${fDT(b.ci)} ${fDY(b.ci)}</b>${b.aci ? ` · thực tế <b class="t">${fDT(b.aci)}</b>` : ''}</dd>
        <dt>Trả phòng</dt><dd><b class="t">${fDT(b.co)} ${fDY(b.co)}</b>${b.aco ? ` · thực tế <b class="t">${fDT(b.aco)}</b>` : ''}</dd>
@@ -1192,7 +1196,7 @@ function openExtend(id){
     <dl class="kv"><dt>Khách</dt><dd>${esc(guestName(b))}</dd><dt>Kiểu thuê</dt><dd>${BKIND[b.kind]}</dd><dt>Giờ trả hiện tại</dt><dd class="t"><b>${fDT(b.co)} ${fDY(b.co)}</b></dd></dl>
     ${nextB ? `<div class="note">Khách tiếp theo ${nextB.kind === 'khoa' ? '(khóa phòng)' : esc(guestName(nextB))} nhận phòng ${esc(r.name)} lúc <b>${fDT(span(nextB)[0])}</b>. Chỉ gia hạn được đến trước giờ đó, hoặc chuyển khách sang phòng khác bằng “Sửa / đổi phòng”.</div>` : ''}
     <div class="f"><span>Thêm nhanh</span><div class="row"><button type="button" class="btn sm" data-act="extQuick" data-h="1">+1 giờ</button><button type="button" class="btn sm" data-act="extQuick" data-h="2">+2 giờ</button><button type="button" class="btn sm" data-act="extQuick" data-h="3">+3 giờ</button><button type="button" class="btn sm" data-act="extQuick" data-h="night">+1 đêm</button></div></div>
-    <label class="f">Giờ trả mới<input type="datetime-local" id="ex-co" data-chg="exCo" value="${toInput(b.co + HOUR)}" required></label>
+    <label class="f">Giờ trả mới<input type="datetime-local" id="ex-co" data-chg="exCo" value="${toInput(Math.max(b.co, b.status === 'checkedout' ? r10(Date.now()) : 0) + HOUR)}" required></label>
     ${canPrice ? `<label class="f">Tiền phòng (tự nhập nếu thu thêm, app không tự đổi)<input type="number" id="ex-price" min="0" step="1000" value="${b.price}"></label>` : ''}
     <div id="ex-info"></div><div class="err hidden" id="ex-err"></div>
   </div><div class="modal-f"><button class="btn" type="button" data-act="close">Thôi</button><button class="btn primary" type="submit">Gia hạn</button></div></form>`);
@@ -1202,7 +1206,7 @@ function extendRefresh(){
   const b = S.bookings.find(x => x.id === modalState.id), h = H(b.houseId), r = RM(h, b.roomId);
   const co = fromInput($('#ex-co').value), box = $('#ex-info'); $('#ex-err').classList.add('hidden');
   if (!(co > (b.aci || b.ci))){ box.innerHTML = '<div class="err">Giờ trả phải sau giờ nhận phòng.</div>'; return; }
-  const cl = conflicts({ ...b, co });
+  const cl = conflicts({ ...b, co, status: b.status === 'checkedout' ? 'inhouse' : b.status, aco: null });
   const np = priceFor(h, r, b.kind, b.aci || b.ci, co);
   let html = `<div class="note">${co >= b.co ? 'Thêm' : 'Rút ngắn'} <b>${dur(co - b.co)}</b> · trả lúc <b>${fDT(co)}</b>`;
   if (can(h.id, 'tien')) html += `<br>Giá tham khảo theo bảng giá cho cả thời gian ở: ${money(np)}. Tiền phòng chỉ đổi khi bạn tự sửa ô bên trên.`;
@@ -1214,10 +1218,11 @@ function saveExtend(){
   const b = S.bookings.find(x => x.id === modalState.id), h = H(b.houseId), r = RM(h, b.roomId);
   const co = fromInput($('#ex-co').value);
   if (!(co > (b.aci || b.ci))) return errBox('ex-err', 'Giờ trả phải sau giờ nhận phòng.');
-  const cl = conflicts({ ...b, co });
+  const cl = conflicts({ ...b, co, status: b.status === 'checkedout' ? 'inhouse' : b.status, aco: null });
   if (cl.length) return errBox('ex-err', `Không gia hạn được: trùng với ${cl[0].kind === 'khoa' ? 'khóa phòng' : esc(guestName(cl[0]))} lúc ${fDT(span(cl[0])[0])}. Hãy chọn giờ sớm hơn hoặc đổi phòng.`);
   const price = $('#ex-price') ? (+$('#ex-price').value || 0) : null;
-  call('extend', { id: b.id, co, price }, { apply: () => { b.co = co; if (price !== null) b.price = price; } });
+  if (b.status === 'checkedout' && co <= Date.now()) return errBox('ex-err', 'Giờ trả mới phải sau thời điểm hiện tại.');
+  call('extend', { id: b.id, co, price }, { apply: () => { b.co = co; if (price !== null) b.price = price; if (b.status === 'checkedout'){ Object.assign(b, { status: 'inhouse', aco: null, autoOut: false }); } } });
 }
 function openPay(id){
   const b = S.bookings.find(x => x.id === id), h = H(b.houseId);
@@ -1468,7 +1473,7 @@ const A = {
   checkout: d => openCheckout(d.id),
   addPay: d => openPay(d.id),
   extend: d => openExtend(d.id),
-  extQuick: d => { const b = S.bookings.find(x => x.id === modalState.id), h = H(b.houseId); const co = d.h === 'night' ? atTime(sod(b.co) + DAY, h.co) : b.co + (+d.h) * HOUR; $('#ex-co').value = toInput(co); extendRefresh(); },
+  extQuick: d => { const b = S.bookings.find(x => x.id === modalState.id), h = H(b.houseId); const base = Math.max(b.co, b.status === 'checkedout' ? r10(Date.now()) : 0); const co = d.h === 'night' ? atTime(sod(base) + DAY, h.co) : base + (+d.h) * HOUR; $('#ex-co').value = toInput(co); extendRefresh(); },
   useAutoPrice: () => { $('#f-price').value = modalState.auto || 0; bookingRefresh(); },
   cancelBk: d => cancelBk(d.id, false),
   noshowBk: d => cancelBk(d.id, true),
@@ -1585,7 +1590,7 @@ const FORMS = {
     const v = { ci: form.ci.value, co: form.co.value, onIn: form.onIn.value, onOut: form.onOut.value }, all = !!(form.all && form.all.checked);
     call('saveTimes', { houseId: h.id, ...v, all }, { apply: () => (all ? myHouses() : [h]).forEach(x => Object.assign(x, v)) });
   },
-  hkset: form => call('saveHkSettings', { prepH: +form.prepH.value, redM: +form.redM.value, autoIn: form.autoIn.checked }),
+  hkset: form => call('saveHkSettings', { prepH: +form.prepH.value, redM: +form.redM.value, autoIn: form.autoIn.checked, autoOut: form.autoOut.checked }),
   rooms: () => saveRooms(),
   user: () => saveUser(),
   perms: () => savePerms(),
