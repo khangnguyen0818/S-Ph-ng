@@ -11,7 +11,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="icon" type="image/png" href="icon-180.png">
-<script src="config.js?v=202611251540"></script><title>Sổ Phòng</title></head><body>
+<script src="config.js?v=202611251554"></script><title>Sổ Phòng</title></head><body>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -169,7 +169,7 @@ label.f > input,label.f > select,label.f > textarea{color:var(--ink);font-size:1
 .cal-corner{position:sticky;left:0;z-index:7;flex:0 0 var(--namew);background:var(--surface);border-right:1px solid var(--line);padding:6px 8px;font-size:11px;color:var(--muted)}
 .cal-day{flex:0 0 auto;text-align:center;padding:5px 0;font-size:12px;color:var(--muted);border-left:1px solid var(--line);line-height:1.2;overflow:hidden;white-space:nowrap}
 .cal-day b{display:block;color:var(--ink);font-size:13px;font-variant-numeric:tabular-nums}
-.cal-day.today{background:var(--accent-soft);color:var(--accent)} .cal-day.today b{color:var(--accent)}
+.cal-day.today{background:color-mix(in srgb,var(--accent) 30%,var(--surface));color:var(--ink);font-weight:600} .cal-day.today b{color:var(--ink)}
 .cal-day.wkend b{color:var(--brass)}
 .cal-group{position:sticky;left:0;display:inline-block;padding:8px 10px 4px;font-family:var(--f-display);font-weight:700;font-size:13px;color:var(--accent)}
 .cal-grouprow{border-top:1px solid var(--line);background:var(--surface-2)}
@@ -183,7 +183,7 @@ label.f > input,label.f > select,label.f > textarea{color:var(--ink);font-size:1
 .cal-name small{display:block;color:var(--muted);font-size:10.5px;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .dot{width:9px;height:9px;border-radius:50%;flex:0 0 auto;background:currentColor}
 .track{position:relative;flex:0 0 auto;cursor:cell}
-.today-col{position:absolute;top:0;bottom:0;background:var(--accent-soft);opacity:.35;pointer-events:none;z-index:0}
+.today-col{position:absolute;top:0;bottom:0;background:color-mix(in srgb,var(--accent) 16%,transparent);border-left:2px solid color-mix(in srgb,var(--accent) 45%,transparent);border-right:2px solid color-mix(in srgb,var(--accent) 45%,transparent);pointer-events:none;z-index:0}
 .now-line{position:absolute;top:0;bottom:0;width:2px;background:var(--st-late);opacity:.85;z-index:4;pointer-events:none}
 .now-line::before{content:attr(data-t);position:absolute;top:2px;left:1px;transform:translateX(-50%);background:var(--st-late);color:var(--surface);font-size:10px;font-weight:700;padding:1px 4px;border-radius:4px}
 .bar{position:absolute;top:6px;height:calc(var(--rowh) - 12px);border-radius:6px;padding:0 7px;display:flex;align-items:center;font-size:12px;font-weight:600;overflow:hidden;cursor:pointer;z-index:2;user-select:none;-webkit-user-select:none;color:var(--on-st)}
