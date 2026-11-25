@@ -11,7 +11,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="icon" type="image/png" href="icon-180.png">
-<script src="config.js?v=202611251603"></script><title>Sổ Phòng</title></head><body>
+<script src="config.js?v=202611251619"></script><title>Sổ Phòng</title></head><body>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -225,8 +225,12 @@ html.noscroll,html.noscroll body{overflow:hidden}
 .hk-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px}
 @media (max-width:520px){.hk-grid{grid-template-columns:1fr}}
 .hk-card{display:flex;gap:12px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px;min-width:0}
-.hk-card.c1{border-color:color-mix(in srgb,var(--st-late) 45%,var(--line))}
-.hk-card.is-red{border:2px solid color-mix(in srgb,var(--st-late) 70%,var(--line));background:color-mix(in srgb,var(--st-late) 5%,var(--surface))}
+/* Nhóm GẤP: tông đỏ cho nổi bật */
+.hk-card.c1{border:2px solid var(--st-late);background:color-mix(in srgb,var(--st-late) 10%,var(--surface));box-shadow:0 2px 10px color-mix(in srgb,var(--st-late) 18%,transparent)}
+.hk-card.c1 .keytag{background:color-mix(in srgb,var(--st-late) 16%,var(--surface));border-top-color:var(--st-late)}
+.hk-card.c1 .btn.primary{background:var(--st-late);border-color:var(--st-late);color:var(--surface)}
+.hk-card.is-red{background:color-mix(in srgb,var(--st-late) 17%,var(--surface));box-shadow:0 0 0 3px color-mix(in srgb,var(--st-late) 28%,transparent)}
+.hk-group-title.urgent{color:var(--st-late);background:color-mix(in srgb,var(--st-late) 12%,var(--surface));border-left:5px solid var(--st-late);padding:8px 12px;border-radius:10px}
 .keytag{flex:0 0 66px;display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 4px 10px;border-radius:12px 12px 18px 18px;background:var(--surface-2);border-top:5px solid currentColor;height:max-content}
 .keytag .hole{width:10px;height:10px;border-radius:50%;border:2px solid var(--line);margin-bottom:2px;background:var(--surface)}
 .keytag b{font-family:var(--f-display);font-size:24px;line-height:1;color:var(--ink)}
@@ -652,7 +656,7 @@ function vCal(){
     ${canAdd ? '<button class="btn primary" data-act="newBk">+ Đặt phòng</button>' : ''}
   </div>
   <div class="legend"><span><i style="background:var(--st-booked)"></i>Đã đặt</span><span><i style="background:var(--st-in)"></i>Đang ở</span><span><i style="background:var(--st-late)"></i>Quá giờ trả</span><span><i style="background:var(--out-bar)"></i>Đã trả</span><span><i style="background:var(--st-noshow)"></i>Không đến</span><span><i style="background:repeating-linear-gradient(-45deg,var(--st-block) 0 4px,color-mix(in srgb,var(--st-block) 80%,var(--surface)) 4px 7px)"></i>Khóa phòng</span>
-   <span>·</span>${Object.entries(HK).map(([k, v]) => `<span class="hk-${k}"><span class="dot" style="display:inline-block;margin-right:4px"></span><span class="muted">${v}</span></span>`).join('')}
+   <span>·</span>${Object.entries(HK).filter(([k]) => k === 'sach' || k === 'ban' || k === 'baotri').map(([k, v]) => `<span class="hk-${k}"><span class="dot" style="display:inline-block;margin-right:4px"></span><span class="muted">${v}</span></span>`).join('')}
    <span class="muted">· Kéo thả thanh để đổi phòng hoặc ngày, kéo mép phải để gia hạn (trên máy tính)</span></div>`;
   if (ui.calMode === 'list') return tools + vCalList(hs);
   const dayW = dayWidth(days), pph = dayW / 24, W = days * dayW, now = Date.now(), T = sod(now);
@@ -726,13 +730,12 @@ function hkItems(hs){
     const arrToday = next && next.ci < E;
     let cat, key = 0;
     if (r.hk === 'baotri') cat = 6;
-    else if (r.hk === 'chokiem') { cat = 5; key = r.hkEnd || 0; }
     else if (inb){
       if (inb.co - now <= S.settings.prepH*HOUR){ cat = 3; key = inb.co; }
       else if (!r.dnd && (r.hk !== 'sach' || (r.hkDoneAt || 0) < T)){ cat = 4; key = inb.co; }
       else cat = 7;
     }
-    else if (r.hk === 'ban' || r.hk === 'dangdon'){ if (arrToday){ cat = 1; key = next.ci; } else { cat = 2; key = lastOut ? lastOut.aco : 0; } }
+    else if (r.hk === 'ban' || r.hk === 'dangdon' || r.hk === 'chokiem'){ if (arrToday){ cat = 1; key = next.ci; } else { cat = 2; key = lastOut ? lastOut.aco : 0; } }
     else cat = 7;
     const red = next && arrToday && r.hk !== 'sach' && next.ci - now < S.settings.redM*MIN;
     items.push({ h, r, cat, key, inb, lastOut, next, arrToday, red });
@@ -754,20 +757,14 @@ function vHK(){
     if (inb){ const od = now > inb.co; lines.push(`<div class="hk-line"><span class="k">Khách đang ở · trả lúc</span><span class="v ${od ? 'red' : ''}">${fDT(inb.co)}</span>${od ? `<span class="late-text">quá ${dur(now - inb.co)}</span>` : it.cat === 3 ? `<span class="countdown">còn ${dur(inb.co - now)}</span>` : ''}</div>`); }
     else if (lastOut && lastOut.aco > T - 12*HOUR) lines.push(`<div class="hk-line"><span class="k">Khách đã trả phòng lúc</span><span class="v">${fDT(lastOut.aco)}</span><span class="muted small">(${dur(now - lastOut.aco)} trước)</span></div>`);
     if (next) lines.push(`<div class="hk-line"><span class="k">Khách mới nhận phòng</span><span class="v">${fDT(next.ci)}</span>${it.arrToday ? `<span class="countdown ${red ? 'red' : ''}">${next.ci > now ? 'còn ' + dur(next.ci - now) : 'đã tới giờ'}</span>` : ''}${can(hid, 'khach') ? `<span class="muted small">${esc(next.guest.name)}</span>` : ''}</div>`);
-    if (r.hk === 'dangdon') lines.push(`<div class="hk-line"><span class="k">Đang dọn:</span><span class="v">${esc(uname(r.hkBy))}</span><span class="muted small">từ ${fT(r.hkStart)} (${dur(now - r.hkStart)})</span></div>`);
-    if (r.hk === 'chokiem') lines.push(`<div class="hk-line"><span class="k">Dọn xong lúc</span><span class="v">${fT(r.hkEnd)}</span><span class="muted small">bởi ${esc(uname(r.hkBy))} · ${dur(r.hkEnd - r.hkStart)}</span></div>`);
+    if (r.hk === 'sach' && r.hkBy && r.hkDoneAt > now - 12*HOUR) lines.push(`<div class="hk-line"><span class="k">Dọn xong lúc</span><span class="v">${fDT(r.hkDoneAt)}</span><span class="muted small">bởi ${esc(uname(r.hkBy))}</span></div>`);
     if (r.dnd && inb) lines.push(`<div class="hk-line"><span class="chip">Khách không muốn dọn</span></div>`);
     if (r.hkNote) lines.push(`<div class="hk-line"><span class="k">Ghi chú:</span><span>${esc(r.hkNote)}</span></div>`);
     const btn = [];
     if (canDo){
-      if (r.hk === 'ban' || (it.cat === 4 && r.hk === 'sach')) btn.push(`<button class="btn primary big" data-act="hk" data-op="start" data-h="${hid}" data-r="${r.id}">Bắt đầu dọn</button>`);
-      if (r.hk === 'dangdon') btn.push(`<button class="btn primary big" data-act="hk" data-op="done" data-h="${hid}" data-r="${r.id}">Dọn xong</button>`);
+      if (r.hk === 'ban' || r.hk === 'dangdon' || r.hk === 'chokiem' || (it.cat === 4 && r.hk === 'sach')) btn.push(`<button class="btn primary big" data-act="hk" data-op="clean" data-h="${hid}" data-r="${r.id}">Đã dọn xong</button>`);
       if (r.hk === 'baotri') btn.push(`<button class="btn big" data-act="hk" data-op="fixed" data-h="${hid}" data-r="${r.id}">Đã sửa xong</button>`);
       if (r.hk === 'sach' && it.cat === 7 && !inb) btn.push(`<button class="btn sm" data-act="hk" data-op="dirty" data-h="${hid}" data-r="${r.id}">Đánh dấu bẩn</button>`);
-    }
-    if (r.hk === 'chokiem'){
-      if (canCheck) btn.push(`<button class="btn primary big" data-act="hk" data-op="pass" data-h="${hid}" data-r="${r.id}">Đạt — Sạch</button><button class="btn big" data-act="hk" data-op="fail" data-h="${hid}" data-r="${r.id}">Chưa đạt</button>`);
-      else btn.push(`<span class="muted small">Chờ quản lý kiểm tra</span>`);
     }
     if (canDo && r.hk !== 'baotri') btn.push(`<button class="btn sm" data-act="hk" data-op="broken" data-h="${hid}" data-r="${r.id}">Báo hỏng</button>`);
     if (canDo) btn.push(`<button class="btn sm ghost" data-act="hk" data-op="note" data-h="${hid}" data-r="${r.id}">Ghi chú</button>`);
@@ -788,7 +785,7 @@ function vHK(){
       <button class="btn ${ui.hkMine ? 'on' : ''}" data-act="hkMine">Phòng của tôi</button></div>
     ${groups.map(g => {
       const collapsed = g.c === 7 && !ui.hkShowClean;
-      return `<div class="hk-group-title">${g.c <= 2 ? `<span class="prio p${g.c}">${g.c}</span>` : ''}${g.c === 3 ? `Sắp trả phòng (trong ${S.settings.prepH} giờ)` : HKG[g.c]}<span class="count">${g.list.length}</span>${g.c === 7 ? `<button class="btn sm ghost" data-act="hkClean">${collapsed ? 'Hiện' : 'Thu gọn'}</button>` : ''}</div>${collapsed ? '' : `<div class="hk-grid">${g.list.map(card).join('')}</div>`}`;
+      return `<div class="hk-group-title${g.c === 1 ? ' urgent' : ''}">${g.c <= 2 ? `<span class="prio p${g.c}">${g.c}</span>` : ''}${g.c === 3 ? `Sắp trả phòng (trong ${S.settings.prepH} giờ)` : HKG[g.c]}<span class="count">${g.list.length}</span>${g.c === 7 ? `<button class="btn sm ghost" data-act="hkClean">${collapsed ? 'Hiện' : 'Thu gọn'}</button>` : ''}</div>${collapsed ? '' : `<div class="hk-grid">${g.list.map(card).join('')}</div>`}`;
     }).join('') || '<div class="empty">Không có phòng nào được giao cho bạn.</div>'}`;
 }
 
@@ -1260,7 +1257,8 @@ async function hkOp(op, hid, rid){
       <div class="modal-f"><button class="btn" type="button" data-act="close">Thôi</button><button class="btn primary" type="submit">Lưu</button></div></form>`);
   }
   // Đổi ngay trên màn hình, máy chủ lưu phía sau. Nếu máy chủ báo lỗi thì tải lại dữ liệu thật.
-  if (op === 'start') Object.assign(r, { hk:'dangdon', hkBy: me.id, hkStart: now, hkEnd: null, assignee: r.assignee || me.id });
+  if (op === 'clean') Object.assign(r, { hk:'sach', hkBy: me.id, hkDoneAt: now, hkStart: null, hkEnd: null });
+  else if (op === 'start') Object.assign(r, { hk:'dangdon', hkBy: me.id, hkStart: now, hkEnd: null, assignee: r.assignee || me.id });
   else if (op === 'done') Object.assign(r, { hk:'chokiem', hkEnd: now });
   else if (op === 'pass') Object.assign(r, { hk:'sach', hkDoneAt: now });
   else if (op === 'fail') Object.assign(r, { hk:'ban', hkStart: null, hkEnd: null });
@@ -1390,7 +1388,7 @@ function drawPerms(){
     <div class="seg" style="flex-wrap:wrap">${hs.map(x => `<button type="button" data-act="permHouse" data-h="${x.id}" class="${x.id === ms.house ? 'on' : ''}">${esc(x.name)}${ms.draft[x.id] ? ' ✓' : ''}</button>`).join('')}</div>
     <label class="row" style="font-weight:600"><input type="checkbox" data-chg="permAccess" ${p ? 'checked' : ''}> Được vào ${esc(h.name)}</label>
     ${p ? `<div class="row small"><span class="muted">Áp nhanh mẫu:</span>${Object.entries(ROLES).map(([k, r]) => `<button type="button" class="btn sm ${roleOf(p) === k ? 'on' : ''}" data-act="permRole" data-k="${k}">${r.n}</button>`).join('')}</div>
-      <div class="tbl-wrap"><table><thead><tr><th>Mục</th>${Object.values(ACTS).map(a => `<th class="c">${a}</th>`).join('')}</tr></thead><tbody>${MODULES.map(m => `<tr><td>${m.n}</td>${Object.keys(ACTS).map(a => `<td class="c">${m.a.includes(a) ? `<input type="checkbox" data-chg="permCell" data-m="${m.k}" data-a="${a}" ${p[m.k][a] ? 'checked' : ''} aria-label="${m.n} – ${ACTS[a]}">` : '<span class="muted">–</span>'}</td>`).join('')}</tr>`).join('')}</tbody></table></div>
+      <div class="tbl-wrap"><table><thead><tr><th>Mục</th>${Object.values(ACTS).map(a => `<th class="c">${a}</th>`).join('')}</tr></thead><tbody>${MODULES.filter(m => m.k !== 'kiemtra').map(m => `<tr><td>${m.n}</td>${Object.keys(ACTS).map(a => `<td class="c">${m.a.includes(a) ? `<input type="checkbox" data-chg="permCell" data-m="${m.k}" data-a="${a}" ${p[m.k][a] ? 'checked' : ''} aria-label="${m.n} – ${ACTS[a]}">` : '<span class="muted">–</span>'}</td>`).join('')}</tr>`).join('')}</tbody></table></div>
       <div class="row"><button type="button" class="btn sm" data-act="permAll">Áp quyền này cho tất cả nhà</button><span class="muted small">Hiện tại: ${esc(roleName(p))}</span></div>`
     : `<div class="note">${esc(u.name)} không thấy ${esc(h.name)} trong ứng dụng, kể cả tên nhà.</div>`}
     <div class="note">Mục nào không được tick “Xem” sẽ bị ẩn hẳn. Dữ liệu tên khách, SĐT, giá chỉ gửi tới người có quyền xem mục đó.</div>
