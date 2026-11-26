@@ -11,7 +11,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="icon" type="image/png" href="icon-180.png">
-<script src="config.js?v=202611261331"></script><title>Sổ Phòng</title></head><body>
+<script src="config.js?v=202611262218"></script><title>Sổ Phòng</title></head><body>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -923,37 +923,48 @@ function vReport(){
   const hs = housesWith('tien'); if (!hs.length) return vNone();
   const [s, e, label] = repRange(), ids = new Set(hs.map(h => h.id)), multi = hs.length > 1;
   const bs = S.bookings.filter(b => ids.has(b.houseId) && b.kind !== 'khoa');
-  const done = bs.filter(b => b.status === 'checkedout' && b.aco >= s && b.aco < e);
-  const revenue = done.reduce((a, b) => a + b.price, 0);
+  // Doanh thu chia đều cho từng đêm khách ở (ở 3 đêm thì mỗi đêm 1/3 tiền phòng), ghi vào ngày có khách.
+  // Thuê theo giờ: tính hết vào ngày nhận phòng. Tính khách đã trả và khách đang ở; chưa tính lượt chưa đến.
+  const allocOf = b => {
+    const a = b.aci || b.ci, z = b.status === 'checkedout' ? (b.aco || b.co) : b.co;
+    const n = b.kind === 'gio' ? 1 : Math.max(1, Math.round((sod(z) - sod(a)) / DAY));
+    const out = []; for (let i = 0; i < n; i++) out.push({ t: sod(sod(a) + i * DAY + 2*HOUR), v: (b.price || 0) / n });
+    return out;
+  };
+  const parts = [];
+  bs.filter(b => b.status === 'checkedout' || b.status === 'inhouse').forEach(b => allocOf(b).forEach(p => { if (p.t >= s && p.t < e) parts.push({ b, t: p.t, v: p.v }); }));
+  const revenue = parts.reduce((a, p) => a + p.v, 0);
+  const stayed = new Set(parts.map(p => p.b.id));
   const cash = new Map(); let cashTotal = 0;
   const addCash = (k, v, t) => { if (t >= s && t < e && v){ cash.set(k, (cash.get(k) || 0) + v); cashTotal += v; } };
   bs.forEach(b => { addCash('Tiền cọc', b.deposit || 0, b.createdAt > (b.co || 0) ? b.ci : b.createdAt); (b.payments || []).forEach(p => addCash(p.method, p.amt, p.at)); });
   const roomsN = hs.reduce((a, h) => a + h.rooms.length, 0);
   let occ = 0; bs.filter(isActive).forEach(b => { const [a, z] = span(b), o = Math.min(z, e) - Math.max(a, s); if (o > 0) occ += o; });
   const occPct = roomsN ? Math.min(100, occ / (roomsN * (e - s)) * 100) : 0;
-  const upcoming = bs.filter(b => (b.status === 'booked' || b.status === 'inhouse') && b.ci >= s && b.ci < e);
+  const upcoming = bs.filter(b => b.status === 'booked' && b.ci >= s && b.ci < e);
   const debts = bs.filter(b => b.status === 'checkedout' && b.price - paidOf(b) > 0).sort((a, b) => b.aco - a.aco);
   const debtTotal = debts.reduce((a, b) => a + b.price - paidOf(b), 0);
   const roomLbl = b => { const h = H(b.houseId), r = RM(h, b.roomId); return (multi ? h.name + ' · ' : '') + 'P' + (r ? r.name : '?'); };
   const typeLbl = b => { const h = H(b.houseId), r = RM(h, b.roomId); return (multi ? h.name + ' · ' : '') + (r ? typeOf(h, r).name : '?'); };
-  const group = fn => { const m = new Map(); done.forEach(b => { const k = fn(b), g = m.get(k) || { n:0, v:0 }; g.n++; g.v += b.price; m.set(k, g); }); return [...m.entries()].sort((a, b) => b[1].v - a[1].v); };
-  const table = (title, rows, col = 'Doanh thu') => `<div class="card"><h3 style="margin-bottom:8px">${title}</h3>${rows.length ? `<div class="tbl-wrap"><table><thead><tr><th></th><th class="c">Lượt</th><th style="text-align:right">${col}</th><th style="width:30%">Tỷ lệ</th></tr></thead><tbody>${rows.map(([k, g]) => `<tr><td>${esc(k)}</td><td class="c num">${g.n}</td><td class="num" style="text-align:right">${money(g.v)}</td><td><div class="rbar" style="width:${revenue ? Math.max(2, g.v / revenue * 100) : 0}%"></div></td></tr>`).join('')}</tbody></table></div>` : '<div class="empty">Chưa có lượt trả phòng trong kỳ này.</div>'}</div>`;
-  const days = []; if (e - s <= 62 * DAY) for (let t = s; t < e; t += DAY){ const t2 = sod(t + DAY + 2*HOUR); const v = done.filter(b => b.aco >= t && b.aco < t2).reduce((a, b) => a + b.price, 0); const n = done.filter(b => b.aco >= t && b.aco < t2).length; days.push({ t, v, n }); t = t2 - DAY; }
+  const group = fn => { const m = new Map(); parts.forEach(p => { const k = fn(p.b), g = m.get(k) || { ids: new Set(), v:0 }; g.ids.add(p.b.id); g.v += p.v; m.set(k, g); }); return [...m.entries()].map(([k, g]) => [k, { n: g.ids.size, v: g.v }]).sort((a, b) => b[1].v - a[1].v); };
+  const table = (title, rows, col = 'Doanh thu') => `<div class="card"><h3 style="margin-bottom:8px">${title}</h3>${rows.length ? `<div class="tbl-wrap"><table><thead><tr><th></th><th class="c">Lượt</th><th style="text-align:right">${col}</th><th style="width:30%">Tỷ lệ</th></tr></thead><tbody>${rows.map(([k, g]) => `<tr><td>${esc(k)}</td><td class="c num">${g.n}</td><td class="num" style="text-align:right">${money(g.v)}</td><td><div class="rbar" style="width:${revenue ? Math.max(2, g.v / revenue * 100) : 0}%"></div></td></tr>`).join('')}</tbody></table></div>` : '<div class="empty">Chưa có khách ở trong kỳ này.</div>'}</div>`;
+  const days = []; if (e - s <= 62 * DAY) for (let t = s; t < e; t += DAY){ const t2 = sod(t + DAY + 2*HOUR); const ps = parts.filter(p => p.t >= t && p.t < t2); days.push({ t, v: ps.reduce((a, p) => a + p.v, 0), n: ps.length }); t = t2 - DAY; }
   const maxDay = Math.max(1, ...days.map(x => x.v));
   const presets = [['today','Hôm nay'],['7d','7 ngày'],['month','Tháng này'],['lastmonth','Tháng trước'],['custom','Tùy chọn']];
   return `<div class="sec-head"><h2>Báo cáo doanh thu</h2><span class="muted small">${esc(label)}${multi ? ' · ' + hs.length + ' nhà' : ' · ' + esc(hs[0].name)}</span></div>
   <div class="cal-tools"><div class="seg">${presets.map(([k, n]) => `<button data-act="repP" data-p="${k}" class="${(ui.repP || 'month') === k ? 'on' : ''}">${n}</button>`).join('')}</div>
     ${ui.repP === 'custom' ? `<label class="row small muted" style="gap:6px">Từ <input type="date" data-chg="repFrom" value="${esc(ui.repFrom || ymd(s))}"></label><label class="row small muted" style="gap:6px">đến <input type="date" data-chg="repTo" value="${esc(ui.repTo || ymd(e - DAY))}"></label>` : ''}</div>
   <div class="tiles">
-    <div class="tile"><b>${money(revenue)}</b><span>Doanh thu phòng (khách đã trả phòng)</span></div>
+    <div class="tile"><b>${money(revenue)}</b><span>Doanh thu phòng (chia theo đêm ở)</span></div>
     <div class="tile"><b>${money(cashTotal)}</b><span>Tiền đã thu trong kỳ</span></div>
-    <div class="tile"><b>${done.length}</b><span>Lượt khách trả phòng</span></div>
-    <div class="tile"><b>${done.length ? money(Math.round(revenue / done.length)) : '—'}</b><span>Trung bình mỗi lượt</span></div>
+    <div class="tile"><b>${stayed.size}</b><span>Lượt khách có ở trong kỳ</span></div>
+    <div class="tile"><b>${parts.length}</b><span>Đêm phòng có khách</span></div>
+    <div class="tile"><b>${parts.length ? money(Math.round(revenue / parts.length)) : '—'}</b><span>Trung bình mỗi đêm phòng</span></div>
     <div class="tile"><b>${occPct.toFixed(0)}%</b><span>Công suất phòng (${roomsN} phòng)</span></div>
     <div class="tile ${debtTotal ? 'warn' : ''}"><b>${money(debtTotal)}</b><span>Còn phải thu (${debts.length} lượt)</span></div>
   </div>
-  <p class="muted small" style="margin:0 0 12px">Doanh thu tính theo ngày khách trả phòng, bằng tiền phòng đã nhập trong đơn. Tiền đã thu tính theo ngày ghi nhận tiền cọc và các lần thu. Công suất tính cả lượt đã đặt trong kỳ.${upcoming.length ? ` Trong kỳ còn ${upcoming.length} lượt đang ở hoặc sắp đến, trị giá ${money(upcoming.reduce((a, b) => a + b.price, 0))}, chưa tính vào doanh thu.` : ''}</p>
-  ${days.length ? `<div class="card" style="margin-bottom:14px"><h3 style="margin-bottom:8px">Theo ngày</h3><div class="tbl-wrap"><table><thead><tr><th>Ngày</th><th class="c">Lượt trả</th><th style="text-align:right">Doanh thu</th><th style="width:45%"></th></tr></thead><tbody>${days.map(x => `<tr${sod(Date.now()) === x.t ? ' style="background:var(--accent-soft)"' : ''}><td class="num">${WD[new Date(x.t).getDay()]} ${fD(x.t)}</td><td class="c num">${x.n || ''}</td><td class="num" style="text-align:right">${x.v ? money(x.v) : '<span class="muted">—</span>'}</td><td><div class="rbar" style="width:${x.v ? Math.max(2, x.v / maxDay * 100) : 0}%"></div></td></tr>`).join('')}</tbody></table></div></div>` : ''}
+  <p class="muted small" style="margin:0 0 12px">Doanh thu tính theo những ngày có khách ở: tiền phòng chia đều cho số đêm, ví dụ ở 3 đêm thì mỗi đêm tính 1/3. Thuê theo giờ tính vào ngày nhận phòng. Tính cả khách đang ở. Tiền đã thu tính theo ngày ghi nhận tiền cọc và các lần thu.${upcoming.length ? ` Trong kỳ còn ${upcoming.length} lượt đã đặt chưa đến, trị giá ${money(upcoming.reduce((a, b) => a + b.price, 0))}, chưa tính vào doanh thu.` : ''}</p>
+  ${days.length ? `<div class="card" style="margin-bottom:14px"><h3 style="margin-bottom:8px">Theo ngày</h3><div class="tbl-wrap"><table><thead><tr><th>Ngày</th><th class="c">Phòng có khách</th><th style="text-align:right">Doanh thu</th><th style="width:45%"></th></tr></thead><tbody>${days.map(x => `<tr${sod(Date.now()) === x.t ? ' style="background:var(--accent-soft)"' : ''}><td class="num">${WD[new Date(x.t).getDay()]} ${fD(x.t)}</td><td class="c num">${x.n || ''}</td><td class="num" style="text-align:right">${x.v ? money(x.v) : '<span class="muted">—</span>'}</td><td><div class="rbar" style="width:${x.v ? Math.max(2, x.v / maxDay * 100) : 0}%"></div></td></tr>`).join('')}</tbody></table></div></div>` : ''}
   <div class="cols" style="margin-bottom:14px">
     <div class="card"><h3 style="margin-bottom:8px">Tiền đã thu theo cách trả</h3>${cash.size ? `<div class="money">${[...cash.entries()].sort((a, b) => b[1] - a[1]).map(([k, v]) => `<span>${esc(k)}</span><span class="${v < 0 ? 'red' : ''}">${money(v)}</span>`).join('')}<span class="tot">Tổng</span><span class="tot">${money(cashTotal)}</span></div>` : '<div class="empty">Chưa thu tiền trong kỳ này.</div>'}</div>
     ${table('Theo nguồn đặt', group(b => b.source || 'Khác'))}
