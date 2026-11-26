@@ -11,7 +11,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="icon" type="image/png" href="icon-180.png">
-<script src="config.js?v=202611251630"></script><title>Sổ Phòng</title></head><body>
+<script src="config.js?v=202611261310"></script><title>Sổ Phòng</title></head><body>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -204,6 +204,31 @@ label.f > input,label.f > select,label.f > textarea{color:var(--ink);font-size:1
 @keyframes blink{50%{filter:brightness(1.18)}}
 @media (prefers-reduced-motion: reduce){.bar.st-late{animation:none}}
 .daylist .li{align-items:flex-start}
+/* khung chọn ngày giờ nhận → trả */
+.rangebtn{display:flex;align-items:center;gap:8px;flex-wrap:wrap;width:100%;text-align:left;border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:9px 12px;min-height:44px;cursor:pointer;font-size:14px;color:var(--ink)}
+.rangebtn:hover{border-color:var(--accent)} .rangebtn:disabled{opacity:.6;cursor:default}
+.rp{border:1px solid var(--line);border-radius:12px;padding:10px;background:var(--surface-2)}
+.rp-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;font-size:15px}
+.rp-hint{font-size:12px;color:var(--muted);margin-bottom:6px;text-align:center}
+.rp-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:2px 0;text-align:center}
+.rp-wd{font-size:11px;color:var(--muted);padding:4px 0}
+.rp-day{border:0;background:none;min-height:40px;cursor:pointer;font-weight:500;font-size:14px;color:var(--ink);font-variant-numeric:tabular-nums}
+.rp-day:hover{background:var(--surface)}
+.rp-day.in{background:color-mix(in srgb,var(--accent) 18%,transparent)}
+.rp-day.start,.rp-day.end{background:var(--accent);color:var(--accent-ink);font-weight:700}
+.rp-day.start{border-radius:10px 0 0 10px} .rp-day.end{border-radius:0 10px 10px 0} .rp-day.start.end{border-radius:10px}
+.rp-day.today:not(.start):not(.end){box-shadow:inset 0 0 0 1px var(--accent);border-radius:10px}
+.rp-day.past{opacity:.45}
+.rp-foot{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+/* huy hiệu nguồn đặt (logo kênh) */
+.src{display:inline-grid;place-items:center;flex:0 0 auto;width:20px;height:20px;border-radius:6px;color:#fff;font:800 11px/1 var(--f-body);letter-spacing:-.02em;vertical-align:-5px}
+.src svg{width:13px;height:13px}
+.src.sm{width:16px;height:16px;font-size:9px;border-radius:5px;vertical-align:-3px} .src.sm svg{width:10px;height:10px}
+.bar .src{margin-right:5px;box-shadow:0 0 0 1.5px rgba(255,255,255,.85)}
+.srcpick{display:flex;flex-wrap:wrap;gap:6px}
+.srcopt{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:99px;padding:5px 10px 5px 6px;cursor:pointer;font-size:13px;color:var(--ink);background:var(--surface)}
+.srcopt input{position:absolute;opacity:0;pointer-events:none}
+.srcopt:has(input:checked){border-color:var(--accent);background:var(--accent-soft);font-weight:600}
 /* lịch toàn màn hình (điện thoại) */
 .calfull{position:fixed;inset:0;z-index:40;background:var(--bg);display:flex;flex-direction:column;
   padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px)}
@@ -458,6 +483,18 @@ const RM = (h, id) => h && h.rooms.find(r => r.id === id);
 const typeOf = (h, r) => h.types.find(t => t.id === r.typeId) || h.types[0];
 const BKIND = { dem:'Theo đêm', gio:'Theo giờ', quadem:'Qua đêm', khoa:'Khóa phòng' };
 const SOURCES = ['Trực tiếp','Điện thoại','Zalo','Booking','Agoda','Airbnb','Traveloka','Khác'];
+/* Huy hiệu nhận diện từng kênh (màu và chữ đặc trưng của kênh) */
+const SRC_BADGE = {
+  'Trực tiếp': { bg:'#5E6E73', t:'<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="7.5" r="4.5"/><path d="M3.5 21c.7-4.6 4.2-7 8.5-7s7.8 2.4 8.5 7z"/></svg>' },
+  'Điện thoại': { bg:'#2F8F6B', t:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.25 11.4 11.4 0 0 0 3.6.57 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.57a1 1 0 0 1-.25 1z"/></svg>' },
+  'Zalo':      { bg:'#0068FF', t:'Z' },
+  'Booking':   { bg:'#003580', t:'B.' },
+  'Agoda':     { bg:'linear-gradient(135deg,#E23A33 0%,#F59A1A 30%,#7AB929 55%,#2C6FB7 80%,#7D3C98 100%)', t:'a' },
+  'Airbnb':    { bg:'#FF385C', t:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"><path d="M12 3c-1 0-1.6.8-2.3 2.3L5 15.5c-1.2 2.7.7 5 2.9 5 1.6 0 2.8-1 4.1-2.6 1.3 1.6 2.5 2.6 4.1 2.6 2.2 0 4.1-2.3 2.9-5L14.3 5.3C13.6 3.8 13 3 12 3z"/><path d="M12 17.9c-1.6-2-2.6-3.6-2.6-5 0-1.3 1.1-2.2 2.6-2.2s2.6.9 2.6 2.2c0 1.4-1 3-2.6 5z"/></svg>' },
+  'Traveloka': { bg:'#0194F3', t:'T' },
+  'Khác':      { bg:'#8A979B', t:'•' },
+};
+const srcBadge = (s, cls = '') => { const x = SRC_BADGE[s] || SRC_BADGE['Khác']; return `<span class="src ${cls}" style="background:${x.bg}" title="${esc(s || 'Khác')}">${x.t}</span>`; };
 const METHODS = ['Tiền mặt','Chuyển khoản','Quẹt thẻ','OTA đã thu'];
 const HK = { sach:'Sạch', ban:'Bẩn', dangdon:'Đang dọn', chokiem:'Chờ kiểm tra', baotri:'Bảo trì' };
 const isActive = b => b.status !== 'cancelled' && b.status !== 'noshow';
@@ -581,7 +618,7 @@ function vToday(){
   const hc = b => multi ? `<span class="chip house">${esc(hName(b.houseId))}</span> ` : '';
   const arrRow = b => { const h = H(b.houseId), r = RM(h, b.roomId), late = b.ci < now; return `<div class="li click" data-act="openBk" data-id="${b.id}">
       <div class="when">${fT(b.ci)}</div>${roomCell(b)}
-      <div class="main"><b>${esc(guestName(b))}</b><span class="small muted">${hc(b)}${BKIND[b.kind]} · ${esc(b.source)}${late ? ` · <span class="late-text">trễ ${dur(now - b.ci)}</span>` : ''}${r && r.hk !== 'sach' ? ` · <span class="${'hk-' + r.hk}">phòng ${HK[r.hk].toLowerCase()}</span>` : ''}</span></div>
+      <div class="main"><b>${esc(guestName(b))}</b><span class="small muted">${hc(b)}${srcBadge(b.source, 'sm')} ${esc(b.source)} · ${BKIND[b.kind]}${late ? ` · <span class="late-text">trễ ${dur(now - b.ci)}</span>` : ''}${r && r.hk !== 'sach' ? ` · <span class="${'hk-' + r.hk}">phòng ${HK[r.hk].toLowerCase()}</span>` : ''}</span></div>
       ${can(b.houseId, 'datphong', 'sua') ? `<button class="btn sm primary" data-act="checkin" data-id="${b.id}">Nhận phòng</button>` : ''}</div>`; };
   const depRow = (b, isOver) => `<div class="li click" data-act="openBk" data-id="${b.id}">
       <div class="when ${isOver ? 'red' : ''}">${fT(b.co)}</div>${roomCell(b)}
@@ -684,7 +721,7 @@ function vCal(){
         const qc = q ? (can(b.houseId, 'khach') && hay.includes(q) ? ' hit' : ' dim') : '';
         const draggable = dragOK && (b.status === 'booked' || b.status === 'inhouse' || b.status === 'block');
         const title = `${nm} · ${stName(b)} · ${fT(b.aci || b.ci)} ${fD(b.aci || b.ci)} → ${fT(b.status === 'checkedout' ? b.aco : b.co)} ${fD(b.status === 'checkedout' ? b.aco : b.co)}`;
-        return `<div class="bar ${stCls(b)}${qc}" data-act="openBk" data-id="${b.id}" ${draggable ? 'data-drag="1"' : ''} style="left:${left}px;width:${w}px" title="${esc(title)}"><span class="bar-t">${esc(nm)}${tt}</span>${draggable ? '<i class="bar-grip"></i>' : ''}</div>`;
+        return `<div class="bar ${stCls(b)}${qc}" data-act="openBk" data-id="${b.id}" ${draggable ? 'data-drag="1"' : ''} style="left:${left}px;width:${w}px" title="${esc(title)}">${b.kind === 'khoa' ? '' : srcBadge(b.source, 'sm')}<span class="bar-t">${esc(nm)}${tt}</span>${draggable ? '<i class="bar-grip"></i>' : ''}</div>`;
       }).join('');
       const t = typeOf(h, r);
       rows += `<div class="cal-row"><div class="cal-name"><span class="dot hk-${r.hk}" title="${HK[r.hk]}"></span><div style="min-width:0"><b>${esc(r.name)}</b><small>${esc(t ? t.name : '')} · T${r.floor}</small></div></div><div class="track" data-act="calNew" data-house="${h.id}" data-room="${r.id}" style="width:${W}px;${bg}">${bars}</div></div>`;
@@ -959,19 +996,20 @@ function openBookingForm({ houseId, roomId, ci, bookingId }){
   openModal(`<form data-form="booking">${mHead(!b ? 'Đặt phòng mới' : done ? 'Sửa lượt đã trả phòng' : 'Sửa lượt đặt')}
    <div class="modal-b">
      ${!b && hs.length > 1 ? `<label class="f">Nhà<select id="f-house" data-chg="fHouse">${hs.map(x => `<option value="${x.id}"${x.id === h.id ? ' selected' : ''}>${esc(x.name)}</option>`).join('')}</select></label>` : `<div class="muted small">${esc(h.name)}</div>`}
-     <div class="grid3">
-       <label class="f">Kiểu thuê<select id="f-kind" data-chg="fKind">${['dem','gio','quadem'].map(k => `<option value="${k}"${kind === k ? ' selected' : ''}>${BKIND[k]}</option>`).join('')}</select></label>
-       <label class="f">${inh || done ? 'Giờ nhận đã đặt' : 'Giờ nhận phòng'}<input type="datetime-local" id="f-ci" data-chg="fTime" value="${toInput(ci0)}" ${inh || done ? 'disabled' : ''} required></label>
-       <label class="f">${done ? 'Giờ trả đã đặt' : 'Giờ trả phòng'}<input type="datetime-local" id="f-co" data-chg="fTime" value="${toInput(co0)}" ${done ? 'disabled' : ''} required></label>
+     <label class="f">Kiểu thuê<select id="f-kind" data-chg="fKind">${['dem','gio','quadem'].map(k => `<option value="${k}"${kind === k ? ' selected' : ''}>${BKIND[k]}</option>`).join('')}</select></label>
+     <div class="f"><span>${inh || done ? 'Thời gian đã đặt' : 'Nhận phòng → Trả phòng'}</span>
+       <button type="button" class="rangebtn" id="f-range" data-act="rangeOpen" ${done ? 'disabled' : ''}></button>
+       <input type="hidden" id="f-ci" value="${toInput(ci0)}" ${inh || done ? 'disabled' : ''}><input type="hidden" id="f-co" value="${toInput(co0)}" ${done ? 'disabled' : ''}>
      </div>
+     <div id="rp" class="rp ${!b ? '' : 'hidden'}"></div>
      ${inh || done ? `<div class="grid2"><label class="f">Giờ nhận thực tế (khách đến sớm/trễ thì sửa ở đây)<input type="datetime-local" id="f-aci" data-chg="fTime" value="${toInput(b.aci)}" required></label>${done ? `<label class="f">Giờ trả thực tế<input type="datetime-local" id="f-aco" data-chg="fTime" value="${toInput(b.aco)}" required></label>` : `<div class="note">Khách ở thêm: sửa “Giờ trả phòng” ở trên hoặc bấm “Gia hạn”.</div>`}</div><div class="small muted" id="f-diff"></div>` : ''}
      <div class="f" style="gap:6px"><span class="small muted" style="font-weight:500">${b ? 'Phòng' : 'Chọn phòng (chọn nhiều phòng để đặt cho đoàn)'}</span><div class="checks" id="f-rooms"></div></div>
      ${showGuest ? `<div class="grid2"><label class="f">Tên khách<input id="f-name" maxlength="60" value="${esc(b ? b.guest.name : '')}" ${b && !can(h.id, 'khach', 'sua') ? 'disabled' : ''}></label><label class="f">Số điện thoại<input id="f-phone" inputmode="tel" maxlength="20" value="${esc(b ? b.guest.phone : '')}" ${b && !can(h.id, 'khach', 'sua') ? 'disabled' : ''}></label></div>` : ''}
      <div class="grid3">
        <label class="f">Người lớn<input type="number" id="f-adults" min="1" max="20" value="${b ? b.guest.adults : 2}"></label>
        <label class="f">Trẻ em<input type="number" id="f-children" min="0" max="20" value="${b ? b.guest.children : 0}"></label>
-       <label class="f">Nguồn đặt<select id="f-source">${SOURCES.map(s => `<option${(b ? b.source : 'Trực tiếp') === s ? ' selected' : ''}>${s}</option>`).join('')}</select></label>
      </div>
+     <div class="f"><span>Nguồn đặt</span><div class="srcpick">${SOURCES.map(s => `<label class="srcopt"><input type="radio" name="f-source" value="${s}" ${(b ? b.source : 'Trực tiếp') === s ? 'checked' : ''}>${srcBadge(s)}<span>${s}</span></label>`).join('')}</div></div>
      <label class="f">Mã đặt phòng của OTA (nếu có, nhập tay)<input id="f-ota" maxlength="40" value="${esc(b ? b.otaCode : '')}"></label>
      ${showMoney ? `<div class="grid2"><label class="f">Giá mỗi phòng (đồng)<input type="number" id="f-price" min="0" step="1000" data-inp="fPrice" value="${b ? b.price : ''}" placeholder="Nhập tiền phòng" ${b && !can(h.id, 'tien', 'sua') ? 'disabled' : ''}></label><label class="f">Tiền cọc mỗi phòng<input type="number" id="f-deposit" min="0" step="1000" value="${b ? b.deposit : 0}" ${b && !can(h.id, 'tien', 'sua') ? 'disabled' : ''}></label></div><div class="small muted" id="f-hint"></div>` : ''}
      <label class="f">Ghi chú<textarea id="f-note" maxlength="300">${esc(b ? b.note : '')}</textarea></label>
@@ -980,8 +1018,40 @@ function openBookingForm({ houseId, roomId, ci, bookingId }){
    <div class="modal-f"><button class="btn" type="button" data-act="close">Thôi</button><button class="btn primary" type="submit">${b ? 'Lưu thay đổi' : 'Đặt phòng'}</button></div></form>`);
   bookingRefresh();
 }
+/* ===== Chọn ngày giờ nhận + trả trong cùng một khung lịch ===== */
+const tod = t => t - sod(t);
+function stayText(ci, co){
+  if (!(co > ci)) return 'giờ trả phải sau giờ nhận';
+  const n = Math.round((sod(co) - sod(ci)) / DAY);
+  return n >= 1 ? n + ' đêm' : dur(co - ci);
+}
+function rangeLabel(){
+  const btn = $('#f-range'); if (!btn) return;
+  const ci = fromInput($('#f-ci').value), co = fromInput($('#f-co').value);
+  btn.innerHTML = `<span><b>${fT(ci)}</b> ${WD[new Date(ci).getDay()]} ${fD(ci)}</span><span class="muted">→</span><span><b>${fT(co)}</b> ${WD[new Date(co).getDay()]} ${fD(co)}</span><span class="chip">${stayText(ci, co)}</span>`;
+}
+function rpDraw(){
+  const box = $('#rp'), ms = modalState; if (!box || box.classList.contains('hidden')) return;
+  const ci = fromInput($('#f-ci').value), co = fromInput($('#f-co').value), lockCi = $('#f-ci').disabled;
+  if (!ms.rpMonth){ const d = new Date(lockCi ? co : ci); ms.rpMonth = new Date(d.getFullYear(), d.getMonth(), 1).getTime(); }
+  const m = new Date(ms.rpMonth), y = m.getFullYear(), mo = m.getMonth(), off = (new Date(y, mo, 1).getDay() + 6) % 7, nDays = new Date(y, mo + 1, 0).getDate();
+  const T = sod(Date.now()), sci = sod(ci), sco = sod(co), next = lockCi ? 'co' : (ms.rpNext || 'ci');
+  let cells = ['T2','T3','T4','T5','T6','T7','CN'].map(x => `<div class="rp-wd">${x}</div>`).join('') + '<div></div>'.repeat(off);
+  for (let d = 1; d <= nDays; d++){
+    const t = new Date(y, mo, d).getTime();
+    const cls = [t === sci ? 'start' : '', t === sco ? 'end' : '', t > sci && t < sco ? 'in' : '', t === T ? 'today' : '', t < T ? 'past' : ''].join(' ');
+    cells += `<button type="button" class="rp-day ${cls}" data-act="rpDay" data-t="${t}">${d}</button>`;
+  }
+  box.innerHTML = `<div class="rp-head"><button type="button" class="btn sm ghost" data-act="rpMonth" data-d="-1" aria-label="Tháng trước">‹</button><b>Tháng ${mo + 1}/${y}</b><button type="button" class="btn sm ghost" data-act="rpMonth" data-d="1" aria-label="Tháng sau">›</button></div>
+    <div class="rp-hint">${lockCi ? 'Khách đã nhận phòng: chỉ chọn lại ngày trả.' : next === 'co' ? 'Bấm chọn <b>ngày trả phòng</b>' : 'Bấm chọn <b>ngày nhận phòng</b>'}</div>
+    <div class="rp-grid">${cells}</div>
+    <div class="rp-foot"><label class="f">Giờ nhận<input type="time" id="rp-ti" data-chg="rpTime" value="${fT(ci)}" ${lockCi ? 'disabled' : ''}></label><label class="f">Giờ trả<input type="time" id="rp-to" data-chg="rpTime" value="${fT(co)}"></label></div>
+    <div class="row" style="margin-top:8px"><span class="muted small">${fT(ci)} ${fD(ci)} → ${fT(co)} ${fD(co)} · ${stayText(ci, co)}</span><span class="grow"></span><button type="button" class="btn sm primary" data-act="rangeOpen">Xong</button></div>`;
+}
+function rpSet(ci, co){ $('#f-ci').value = toInput(ci); $('#f-co').value = toInput(co); bookingRefresh(); }
 function bookingRefresh(){
   const ms = modalState; if (!ms || ms.form !== 'booking') return;
+  rangeLabel();
   const h = H(ms.houseId), b = ms.bookingId ? S.bookings.find(x => x.id === ms.bookingId) : null;
   const kind = $('#f-kind').value, f = readTimes(b), ci = f.aci || f.ci, co = f.aco || f.co;
   const box = $('#f-rooms');
@@ -1006,6 +1076,7 @@ function bookingRefresh(){
     const n = ms.sel.size || 1;
     $('#f-hint').innerHTML = `Tiền phòng do bạn tự nhập, app không tự đổi. Giá tham khảo theo bảng giá: ${money(auto)}${!p.disabled && +p.value !== auto ? ` <button type="button" class="btn sm" data-act="useAutoPrice">Điền giá này</button>` : ''}${n > 1 ? ` · ${n} phòng, tổng ${money((+p.value || 0) * n)}` : ''}`;
   }
+  rpDraw();
 }
 function readTimes(b){
   const g = id => { const e = $('#' + id); return e ? fromInput(e.value) : null; };
@@ -1030,7 +1101,7 @@ function saveBooking(){
   if (clash.length) return errBox('f-err', 'Không đặt được vì trùng lịch:<br>' + clash.join('<br>'));
   const v = id => { const e = $('#' + id); return e ? e.value : null; };
   const pl = { id: b ? b.id : '', houseId: h.id, rooms, kind, ci, co, aci: f.aci, aco: f.aco, adults: +v('f-adults') || 1, children: +v('f-children') || 0,
-    source: v('f-source'), otaCode: (v('f-ota') || '').trim(), note: (v('f-note') || '').trim() };
+    source: (document.querySelector('input[name="f-source"]:checked') || {}).value || 'Trực tiếp', otaCode: (v('f-ota') || '').trim(), note: (v('f-note') || '').trim() };
   if ($('#f-name') && !$('#f-name').disabled){ pl.guestName = v('f-name').trim(); pl.guestPhone = v('f-phone').trim(); }
   if ($('#f-price') && !$('#f-price').disabled){ pl.price = +v('f-price') || 0; pl.deposit = +v('f-deposit') || 0; }
   const apply = () => {
@@ -1102,7 +1173,7 @@ function openBooking(id){
   if (canX) acts.push(`<button class="btn danger" data-act="delBk" data-id="${b.id}">Xóa</button>`);
   openModal(`${mHead(`Phòng ${esc(r.name)} · ${esc(guestName(b))}`)}
    <div class="modal-b">
-     <div class="row"><span class="pill ${stCls(b)}">${stName(b)}</span>${b.autoIn ? '<span class="chip" title="App tự nhận phòng khi đến giờ đã đặt. Khách đến giờ khác thì bấm “Xác nhận giờ đến”; khách không đến thì bấm “Không đến”.">Tự nhận phòng đúng giờ đặt</span>' : ''}${b.autoOut ? '<span class="chip" title="App tự trả phòng khi hết giờ. Khách còn ở thì bấm “Khách ở thêm (gia hạn)”.">Tự trả phòng khi hết giờ</span>' : ''}<span class="chip">${BKIND[b.kind]}</span><span class="chip">${esc(b.source)}${b.otaCode ? ' · ' + esc(b.otaCode) : ''}</span><span class="muted small">${esc(h.name)}</span></div>
+     <div class="row"><span class="pill ${stCls(b)}">${stName(b)}</span>${b.autoIn ? '<span class="chip" title="App tự nhận phòng khi đến giờ đã đặt. Khách đến giờ khác thì bấm “Xác nhận giờ đến”; khách không đến thì bấm “Không đến”.">Tự nhận phòng đúng giờ đặt</span>' : ''}${b.autoOut ? '<span class="chip" title="App tự trả phòng khi hết giờ. Khách còn ở thì bấm “Khách ở thêm (gia hạn)”.">Tự trả phòng khi hết giờ</span>' : ''}<span class="chip">${BKIND[b.kind]}</span><span class="chip">${srcBadge(b.source, 'sm')} ${esc(b.source)}${b.otaCode ? ' · ' + esc(b.otaCode) : ''}</span><span class="muted small">${esc(h.name)}</span></div>
      <dl class="kv">
        <dt>Nhận phòng</dt><dd><b class="t">${fDT(b.ci)} ${fDY(b.ci)}</b>${b.aci ? ` · thực tế <b class="t">${fDT(b.aci)}</b>` : ''}</dd>
        <dt>Trả phòng</dt><dd><b class="t">${fDT(b.co)} ${fDY(b.co)}</b>${b.aco ? ` · thực tế <b class="t">${fDT(b.aco)}</b>` : ''}</dd>
@@ -1473,6 +1544,23 @@ const A = {
   addPay: d => openPay(d.id),
   extend: d => openExtend(d.id),
   extQuick: d => { const b = S.bookings.find(x => x.id === modalState.id), h = H(b.houseId); const base = Math.max(b.co, b.status === 'checkedout' ? r10(Date.now()) : 0); const co = d.h === 'night' ? atTime(sod(base) + DAY, h.co) : base + (+d.h) * HOUR; $('#ex-co').value = toInput(co); extendRefresh(); },
+  rangeOpen: () => { const box = $('#rp'); if (!box) return; box.classList.toggle('hidden'); modalState.rpMonth = 0; rpDraw(); },
+  rpMonth: d => { const m = new Date(modalState.rpMonth); modalState.rpMonth = new Date(m.getFullYear(), m.getMonth() + (+d.d), 1).getTime(); rpDraw(); },
+  rpDay: d => {
+    const t = +d.t, ms = modalState, h = H(ms.houseId), kind = $('#f-kind').value;
+    let ci = fromInput($('#f-ci').value), co = fromInput($('#f-co').value);
+    if ($('#f-ci').disabled){ co = t + tod(co); if (co <= ci) return toast('Ngày trả phải sau giờ nhận phòng.', true); return rpSet(ci, co); }
+    if ((ms.rpNext || 'ci') === 'ci' || t < sod(ci)){
+      ci = t + tod(ci);
+      if (co <= ci) co = kind === 'gio' ? ci + 2*HOUR : atTime(t + DAY, kind === 'quadem' ? h.onOut : h.co);
+      ms.rpNext = kind === 'gio' ? 'ci' : 'co';
+    } else {
+      co = t + tod(co);
+      if (co <= ci) co = kind === 'gio' ? ci + 2*HOUR : atTime(t + DAY, h.co);
+      ms.rpNext = 'ci';
+    }
+    rpSet(ci, co);
+  },
   useAutoPrice: () => { $('#f-price').value = modalState.auto || 0; bookingRefresh(); },
   cancelBk: d => cancelBk(d.id, false),
   noshowBk: d => cancelBk(d.id, true),
@@ -1548,6 +1636,12 @@ const CHG = {
     modalState.priceTouched = false; bookingRefresh();
   },
   exCo: () => extendRefresh(),
+  rpTime: () => {
+    const hm = s => { const [a, b] = (s || '00:00').split(':').map(Number); return a * HOUR + b * MIN; };
+    const ci0 = fromInput($('#f-ci').value), co0 = fromInput($('#f-co').value);
+    const ci = $('#f-ci').disabled ? ci0 : sod(ci0) + hm($('#rp-ti').value), co = sod(co0) + hm($('#rp-to').value);
+    rpSet(ci, co);
+  },
   ciAt: () => ciDiff(),
   coCalc: () => coCalc(),
   fTime: () => { modalState.priceTouched = modalState.bookingId ? modalState.priceTouched : false; bookingRefresh(); },
