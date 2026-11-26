@@ -11,7 +11,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="icon" type="image/png" href="icon-180.png">
-<script src="config.js?v=202611261310"></script><title>Sổ Phòng</title></head><body>
+<script src="config.js?v=202611261316"></script><title>Sổ Phòng</title></head><body>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -226,7 +226,7 @@ label.f > input,label.f > select,label.f > textarea{color:var(--ink);font-size:1
 .src.sm{width:16px;height:16px;font-size:9px;border-radius:5px;vertical-align:-3px} .src.sm svg{width:10px;height:10px}
 .bar .src{margin-right:5px;box-shadow:0 0 0 1.5px rgba(255,255,255,.85)}
 .srcpick{display:flex;flex-wrap:wrap;gap:6px}
-.srcopt{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:99px;padding:5px 10px 5px 6px;cursor:pointer;font-size:13px;color:var(--ink);background:var(--surface)}
+.srcopt{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:99px;padding:5px 12px;min-height:32px;cursor:pointer;font-size:13px;color:var(--ink);background:var(--surface)}
 .srcopt input{position:absolute;opacity:0;pointer-events:none}
 .srcopt:has(input:checked){border-color:var(--accent);background:var(--accent-soft);font-weight:600}
 /* lịch toàn màn hình (điện thoại) */
@@ -494,7 +494,9 @@ const SRC_BADGE = {
   'Traveloka': { bg:'#0194F3', t:'T' },
   'Khác':      { bg:'#8A979B', t:'•' },
 };
-const srcBadge = (s, cls = '') => { const x = SRC_BADGE[s] || SRC_BADGE['Khác']; return `<span class="src ${cls}" style="background:${x.bg}" title="${esc(s || 'Khác')}">${x.t}</span>`; };
+// Chỉ khách đến từ kênh OTA mới có huy hiệu; khách trực tiếp, điện thoại, Zalo… hiện bình thường.
+const OTA = ['Booking', 'Agoda', 'Airbnb', 'Traveloka'];
+const srcBadge = (s, cls = '') => { if (!OTA.includes(s)) return ''; const x = SRC_BADGE[s]; return `<span class="src ${cls}" style="background:${x.bg}" title="${esc(s || 'Khác')}">${x.t}</span>`; };
 const METHODS = ['Tiền mặt','Chuyển khoản','Quẹt thẻ','OTA đã thu'];
 const HK = { sach:'Sạch', ban:'Bẩn', dangdon:'Đang dọn', chokiem:'Chờ kiểm tra', baotri:'Bảo trì' };
 const isActive = b => b.status !== 'cancelled' && b.status !== 'noshow';
