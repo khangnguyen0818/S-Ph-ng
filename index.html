@@ -11,7 +11,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="icon" type="image/png" href="icon-180.png">
-<script src="config.js?v=202611261316"></script><title>Sổ Phòng</title></head><body>
+<script src="config.js?v=202611261331"></script><title>Sổ Phòng</title></head><body>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -927,7 +927,7 @@ function vReport(){
   const revenue = done.reduce((a, b) => a + b.price, 0);
   const cash = new Map(); let cashTotal = 0;
   const addCash = (k, v, t) => { if (t >= s && t < e && v){ cash.set(k, (cash.get(k) || 0) + v); cashTotal += v; } };
-  bs.forEach(b => { addCash('Tiền cọc', b.deposit || 0, b.createdAt); (b.payments || []).forEach(p => addCash(p.method, p.amt, p.at)); });
+  bs.forEach(b => { addCash('Tiền cọc', b.deposit || 0, b.createdAt > (b.co || 0) ? b.ci : b.createdAt); (b.payments || []).forEach(p => addCash(p.method, p.amt, p.at)); });
   const roomsN = hs.reduce((a, h) => a + h.rooms.length, 0);
   let occ = 0; bs.filter(isActive).forEach(b => { const [a, z] = span(b), o = Math.min(z, e) - Math.max(a, s); if (o > 0) occ += o; });
   const occPct = roomsN ? Math.min(100, occ / (roomsN * (e - s)) * 100) : 0;
@@ -1014,6 +1014,8 @@ function openBookingForm({ houseId, roomId, ci, bookingId }){
      <div class="f"><span>Nguồn đặt</span><div class="srcpick">${SOURCES.map(s => `<label class="srcopt"><input type="radio" name="f-source" value="${s}" ${(b ? b.source : 'Trực tiếp') === s ? 'checked' : ''}>${srcBadge(s)}<span>${s}</span></label>`).join('')}</div></div>
      <label class="f">Mã đặt phòng của OTA (nếu có, nhập tay)<input id="f-ota" maxlength="40" value="${esc(b ? b.otaCode : '')}"></label>
      ${showMoney ? `<div class="grid2"><label class="f">Giá mỗi phòng (đồng)<input type="number" id="f-price" min="0" step="1000" data-inp="fPrice" value="${b ? b.price : ''}" placeholder="Nhập tiền phòng" ${b && !can(h.id, 'tien', 'sua') ? 'disabled' : ''}></label><label class="f">Tiền cọc mỗi phòng<input type="number" id="f-deposit" min="0" step="1000" value="${b ? b.deposit : 0}" ${b && !can(h.id, 'tien', 'sua') ? 'disabled' : ''}></label></div><div class="small muted" id="f-hint"></div>` : ''}
+     ${!b ? `<div id="f-past" class="note hidden"><b>Lượt này đã qua</b>: sẽ lưu thẳng là <b>Đã trả phòng</b> và tính vào doanh thu ngày trả.
+       ${can(h.id, 'tien', 'them') ? `<div class="row" style="margin-top:6px"><label class="row"><input type="checkbox" id="f-paid" checked> Khách đã trả đủ tiền</label><select id="f-paymethod" style="min-height:32px;padding:3px 8px">${METHODS.map(m => `<option>${m}</option>`).join('')}</select></div>` : ''}</div>` : ''}
      <label class="f">Ghi chú<textarea id="f-note" maxlength="300">${esc(b ? b.note : '')}</textarea></label>
      <div class="err hidden" id="f-err"></div>
    </div>
@@ -1054,6 +1056,7 @@ function rpSet(ci, co){ $('#f-ci').value = toInput(ci); $('#f-co').value = toInp
 function bookingRefresh(){
   const ms = modalState; if (!ms || ms.form !== 'booking') return;
   rangeLabel();
+  const pastBox = $('#f-past'); if (pastBox) pastBox.classList.toggle('hidden', !(fromInput($('#f-co').value) <= Date.now()));
   const h = H(ms.houseId), b = ms.bookingId ? S.bookings.find(x => x.id === ms.bookingId) : null;
   const kind = $('#f-kind').value, f = readTimes(b), ci = f.aci || f.ci, co = f.aco || f.co;
   const box = $('#f-rooms');
@@ -1106,6 +1109,8 @@ function saveBooking(){
     source: (document.querySelector('input[name="f-source"]:checked') || {}).value || 'Trực tiếp', otaCode: (v('f-ota') || '').trim(), note: (v('f-note') || '').trim() };
   if ($('#f-name') && !$('#f-name').disabled){ pl.guestName = v('f-name').trim(); pl.guestPhone = v('f-phone').trim(); }
   if ($('#f-price') && !$('#f-price').disabled){ pl.price = +v('f-price') || 0; pl.deposit = +v('f-deposit') || 0; }
+  const past = !b && co <= Date.now();
+  if (past && $('#f-paid')){ pl.paidFull = $('#f-paid').checked; pl.payMethod = $('#f-paymethod').value; }
   const apply = () => {
     const guest = g => ({ ...g, adults: pl.adults, children: pl.children, ...(pl.guestName !== undefined ? { name: pl.guestName, phone: pl.guestPhone } : {}) });
     if (b){
@@ -1114,8 +1119,9 @@ function saveBooking(){
       if (b.status !== 'checkedout') b.co = co;
       if (f.aci) b.aci = f.aci; if (f.aco) b.aco = f.aco;
       if (pl.price !== undefined){ b.price = pl.price; b.deposit = pl.deposit; }
-    } else rooms.forEach(rid => S.bookings.push({ id: 'tmp' + uid(), houseId: h.id, roomId: rid, groupId: '', kind, status: 'booked', ci, co, aci: null, aco: null,
-      guest: guest({ name: '', phone: '' }), source: pl.source, otaCode: pl.otaCode, note: pl.note, price: pl.price || 0, deposit: pl.deposit || 0, payments: [] }));
+    } else rooms.forEach(rid => S.bookings.push({ id: 'tmp' + uid(), houseId: h.id, roomId: rid, groupId: '', kind, status: past ? 'checkedout' : 'booked', ci, co, aci: past ? ci : null, aco: past ? co : null,
+      guest: guest({ name: '', phone: '' }), source: pl.source, otaCode: pl.otaCode, note: pl.note, price: pl.price || 0, deposit: pl.deposit || 0,
+      payments: past && pl.paidFull && (pl.price || 0) > (pl.deposit || 0) ? [{ amt: pl.price - (pl.deposit || 0), method: pl.payMethod, at: co, by: me.name }] : [] }));
   };
   call('saveBooking', pl, { apply });
 }
@@ -1171,7 +1177,7 @@ function openBooking(id){
   if (canE && b.status === 'checkedout' && b.autoOut) acts.push(`<button class="btn primary" data-act="extend" data-id="${b.id}">Khách ở thêm (gia hạn)</button>`);
   if (canE && b.status === 'checkedout') acts.push(`<button class="btn" data-act="editBk" data-id="${b.id}">Sửa giờ thực tế / tiền</button>`);
   if (canE && b.status === 'inhouse' && b.autoIn) acts.push(`<button class="btn" data-act="checkin" data-id="${b.id}">Xác nhận giờ đến</button>`);
-  if (canE && (b.status === 'booked' || (b.status === 'inhouse' && b.autoIn))) acts.push(`<button class="btn" data-act="cancelBk" data-id="${b.id}">Hủy</button>`, `<button class="btn" data-act="noshowBk" data-id="${b.id}">Không đến</button>`);
+  if (canE && (b.status === 'booked' || (b.status === 'inhouse' && b.autoIn) || (b.status === 'checkedout' && b.autoIn && b.autoOut))) acts.push(`<button class="btn" data-act="cancelBk" data-id="${b.id}">Hủy</button>`, `<button class="btn" data-act="noshowBk" data-id="${b.id}">Không đến</button>`);
   if (canX) acts.push(`<button class="btn danger" data-act="delBk" data-id="${b.id}">Xóa</button>`);
   openModal(`${mHead(`Phòng ${esc(r.name)} · ${esc(guestName(b))}`)}
    <div class="modal-b">
