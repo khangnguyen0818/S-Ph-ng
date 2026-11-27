@@ -11,7 +11,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="icon" type="image/png" href="icon-180.png">
-<script src="config.js?v=202611262218"></script><title>Sổ Phòng</title></head><body>
+<script src="config.js?v=202611271809"></script><title>Sổ Phòng</title></head><body>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -180,6 +180,8 @@ label.f > input,label.f > select,label.f > textarea{color:var(--ink);font-size:1
 .list-sub:first-child{border-top:0;padding-top:0}
 .cal-name{position:sticky;left:0;z-index:5;flex:0 0 var(--namew);display:flex;align-items:center;gap:7px;padding:0 8px;background:var(--surface);border-right:1px solid var(--line);min-width:0}
 .cal-name b{font-family:var(--f-display);font-size:15px}
+.cal-name.can-new{cursor:pointer} .cal-name.can-new:hover{background:var(--surface-2)}
+.cal-name .plus{font-style:normal;font-family:var(--f-body);font-size:12px;font-weight:700;color:var(--accent);margin-left:4px;opacity:.8}
 .cal-name small{display:block;color:var(--muted);font-size:10.5px;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .dot{width:9px;height:9px;border-radius:50%;flex:0 0 auto;background:currentColor}
 .track{position:relative;flex:0 0 auto;cursor:cell}
@@ -726,7 +728,8 @@ function vCal(){
         return `<div class="bar ${stCls(b)}${qc}" data-act="openBk" data-id="${b.id}" ${draggable ? 'data-drag="1"' : ''} style="left:${left}px;width:${w}px" title="${esc(title)}">${b.kind === 'khoa' ? '' : srcBadge(b.source, 'sm')}<span class="bar-t">${esc(nm)}${tt}</span>${draggable ? '<i class="bar-grip"></i>' : ''}</div>`;
       }).join('');
       const t = typeOf(h, r);
-      rows += `<div class="cal-row"><div class="cal-name"><span class="dot hk-${r.hk}" title="${HK[r.hk]}"></span><div style="min-width:0"><b>${esc(r.name)}</b><small>${esc(t ? t.name : '')} · T${r.floor}</small></div></div><div class="track" data-act="calNew" data-house="${h.id}" data-room="${r.id}" style="width:${W}px;${bg}">${bars}</div></div>`;
+      const canNew = can(h.id, 'datphong', 'them');
+      rows += `<div class="cal-row"><div class="cal-name${canNew ? ' can-new' : ''}" ${canNew ? `data-act="newBk" data-house="${h.id}" data-room="${r.id}" title="Bấm để đặt phòng ${esc(r.name)}"` : ''}><span class="dot hk-${r.hk}" title="${HK[r.hk]}"></span><div style="min-width:0"><b>${esc(r.name)}${canNew ? '<i class="plus">+</i>' : ''}</b><small>${esc(t ? t.name : '')} · T${r.floor}</small></div></div><div class="track" data-act="calNew" data-house="${h.id}" data-room="${r.id}" style="width:${W}px;${bg}">${bars}</div></div>`;
     }
   }
   const todayCol = days > 1 && T >= start && T < end ? `<div class="today-col" style="left:${NAMEW + (T - start) / HOUR * pph}px;width:${dayW}px"></div>` : '';
@@ -991,17 +994,18 @@ function confirmBox({ title, html, ok = 'Đồng ý', danger = false, typeText =
 function errBox(id, msg){ const e = $('#' + id); if (!e) return toast(msg, true); e.innerHTML = msg; e.classList.remove('hidden'); }
 
 /* ---- đặt phòng ---- */
-function openBookingForm({ houseId, roomId, ci, bookingId }){
+function openBookingForm({ houseId, roomId, ci, bookingId, at, kindIn }){
   const b = bookingId ? S.bookings.find(x => x.id === bookingId) : null;
   let hs = housesWith('datphong', b ? 'sua' : 'them');
   if (b) hs = [H(b.houseId)];
   if (!hs.length) return toast('Bạn không có quyền đặt phòng ở nhà này.', true);
   const h = H(houseId || (b && b.houseId)) || hs[0];
   const now = Date.now();
-  const kind = b ? b.kind : (ui.view === 'cal' && ui.calDays === 1 ? 'gio' : 'dem');
-  let ci0 = b ? b.ci : (ci || (sod(now) === sod(atTime(now, h.ci)) && now < atTime(now, h.ci) ? atTime(now, h.ci) : r10(now + 10*MIN)));
+  const kind = b ? b.kind : (kindIn || (ui.view === 'cal' && ui.calDays === 1 && !ui.calFull ? 'gio' : 'dem'));
+  let ci0 = b ? b.ci : (at || ci || (sod(now) === sod(atTime(now, h.ci)) && now < atTime(now, h.ci) ? atTime(now, h.ci) : r10(now + 10*MIN)));
   let co0 = b ? b.co : kind === 'gio' ? ci0 + 2*HOUR : atTime(ci0 + DAY, h.co);
-  if (!b && kind === 'dem' && ci) { ci0 = atTime(ci, h.ci); co0 = atTime(ci + DAY, h.co); }
+  if (!b && kind === 'dem' && ci && !at) { ci0 = atTime(ci, h.ci); co0 = atTime(ci + DAY, h.co); }
+  if (!b && kind === 'quadem' && !at) { ci0 = atTime(ci || ci0, h.onIn); co0 = atTime((ci || ci0) + DAY, h.onOut); }
   modalState = { form:'booking', houseId: h.id, bookingId: b ? b.id : null, priceTouched: !!b, sel: new Set(b ? [b.roomId] : roomId ? [roomId] : []) };
   const showGuest = can(h.id, 'khach', b ? 'sua' : 'them') || can(h.id, 'khach');
   const showMoney = can(h.id, 'tien');
@@ -1014,7 +1018,7 @@ function openBookingForm({ houseId, roomId, ci, bookingId }){
        <button type="button" class="rangebtn" id="f-range" data-act="rangeOpen" ${done ? 'disabled' : ''}></button>
        <input type="hidden" id="f-ci" value="${toInput(ci0)}" ${inh || done ? 'disabled' : ''}><input type="hidden" id="f-co" value="${toInput(co0)}" ${done ? 'disabled' : ''}>
      </div>
-     <div id="rp" class="rp ${!b ? '' : 'hidden'}"></div>
+     <div id="rp" class="rp hidden"></div>
      ${inh || done ? `<div class="grid2"><label class="f">Giờ nhận thực tế (khách đến sớm/trễ thì sửa ở đây)<input type="datetime-local" id="f-aci" data-chg="fTime" value="${toInput(b.aci)}" required></label>${done ? `<label class="f">Giờ trả thực tế<input type="datetime-local" id="f-aco" data-chg="fTime" value="${toInput(b.aco)}" required></label>` : `<div class="note">Khách ở thêm: sửa “Giờ trả phòng” ở trên hoặc bấm “Gia hạn”.</div>`}</div><div class="small muted" id="f-diff"></div>` : ''}
      <div class="f" style="gap:6px"><span class="small muted" style="font-weight:500">${b ? 'Phòng' : 'Chọn phòng (chọn nhiều phòng để đặt cho đoàn)'}</span><div class="checks" id="f-rooms"></div></div>
      ${showGuest ? `<div class="grid2"><label class="f">Tên khách<input id="f-name" maxlength="60" value="${esc(b ? b.guest.name : '')}" ${b && !can(h.id, 'khach', 'sua') ? 'disabled' : ''}></label><label class="f">Số điện thoại<input id="f-phone" inputmode="tel" maxlength="20" value="${esc(b ? b.guest.phone : '')}" ${b && !can(h.id, 'khach', 'sua') ? 'disabled' : ''}></label></div>` : ''}
@@ -1045,9 +1049,18 @@ function rangeLabel(){
   const ci = fromInput($('#f-ci').value), co = fromInput($('#f-co').value);
   btn.innerHTML = `<span><b>${fT(ci)}</b> ${WD[new Date(ci).getDay()]} ${fD(ci)}</span><span class="muted">→</span><span><b>${fT(co)}</b> ${WD[new Date(co).getDay()]} ${fD(co)}</span><span class="chip">${stayText(ci, co)}</span>`;
 }
+/* Khung chọn giữ một bản nháp (ms.rp). Chỉ khi bấm "Xong" mới ghi vào đơn và đóng khung.
+   Đổi giờ không vẽ lại khung, để bánh xe chọn giờ trên điện thoại không bị nhảy. */
+const hmOf = s => { const [a, b] = (s || '00:00').split(':').map(Number); return (a || 0) * HOUR + (b || 0) * MIN; };
+function rpInit(){ const ms = modalState; ms.rp = { ci: fromInput($('#f-ci').value), co: fromInput($('#f-co').value) }; ms.rpNext = 'ci'; ms.rpMonth = 0; rpDraw(); }
+function rpReadTimes(){
+  const ms = modalState, ti = $('#rp-ti'), to = $('#rp-to'); if (!ms || !ms.rp) return;
+  if (ti && !ti.disabled && ti.value) ms.rp.ci = sod(ms.rp.ci) + hmOf(ti.value);
+  if (to && to.value) ms.rp.co = sod(ms.rp.co) + hmOf(to.value);
+}
 function rpDraw(){
-  const box = $('#rp'), ms = modalState; if (!box || box.classList.contains('hidden')) return;
-  const ci = fromInput($('#f-ci').value), co = fromInput($('#f-co').value), lockCi = $('#f-ci').disabled;
+  const box = $('#rp'), ms = modalState; if (!box || box.classList.contains('hidden') || !ms.rp) return;
+  const ci = ms.rp.ci, co = ms.rp.co, lockCi = $('#f-ci').disabled;
   if (!ms.rpMonth){ const d = new Date(lockCi ? co : ci); ms.rpMonth = new Date(d.getFullYear(), d.getMonth(), 1).getTime(); }
   const m = new Date(ms.rpMonth), y = m.getFullYear(), mo = m.getMonth(), off = (new Date(y, mo, 1).getDay() + 6) % 7, nDays = new Date(y, mo + 1, 0).getDate();
   const T = sod(Date.now()), sci = sod(ci), sco = sod(co), next = lockCi ? 'co' : (ms.rpNext || 'ci');
@@ -1060,10 +1073,11 @@ function rpDraw(){
   box.innerHTML = `<div class="rp-head"><button type="button" class="btn sm ghost" data-act="rpMonth" data-d="-1" aria-label="Tháng trước">‹</button><b>Tháng ${mo + 1}/${y}</b><button type="button" class="btn sm ghost" data-act="rpMonth" data-d="1" aria-label="Tháng sau">›</button></div>
     <div class="rp-hint">${lockCi ? 'Khách đã nhận phòng: chỉ chọn lại ngày trả.' : next === 'co' ? 'Bấm chọn <b>ngày trả phòng</b>' : 'Bấm chọn <b>ngày nhận phòng</b>'}</div>
     <div class="rp-grid">${cells}</div>
-    <div class="rp-foot"><label class="f">Giờ nhận<input type="time" id="rp-ti" data-chg="rpTime" value="${fT(ci)}" ${lockCi ? 'disabled' : ''}></label><label class="f">Giờ trả<input type="time" id="rp-to" data-chg="rpTime" value="${fT(co)}"></label></div>
-    <div class="row" style="margin-top:8px"><span class="muted small">${fT(ci)} ${fD(ci)} → ${fT(co)} ${fD(co)} · ${stayText(ci, co)}</span><span class="grow"></span><button type="button" class="btn sm primary" data-act="rangeOpen">Xong</button></div>`;
+    <div class="rp-foot"><label class="f">Giờ nhận<input type="time" id="rp-ti" value="${fT(ci)}" ${lockCi ? 'disabled' : ''}></label><label class="f">Giờ trả<input type="time" id="rp-to" value="${fT(co)}"></label></div>
+    <div class="rp-hint" style="margin-top:6px;text-align:left">Ngày: ${fD(ci)} → ${fD(co)}. Chỉnh giờ xong bấm <b>Xong</b> để lưu.</div>
+    <div class="err hidden" id="rp-err"></div>
+    <div class="row" style="margin-top:8px;justify-content:flex-end"><button type="button" class="btn sm" data-act="rpCancel">Thôi</button><button type="button" class="btn primary" data-act="rpDone">Xong</button></div>`;
 }
-function rpSet(ci, co){ $('#f-ci').value = toInput(ci); $('#f-co').value = toInput(co); bookingRefresh(); }
 function bookingRefresh(){
   const ms = modalState; if (!ms || ms.form !== 'booking') return;
   rangeLabel();
@@ -1092,13 +1106,14 @@ function bookingRefresh(){
     const n = ms.sel.size || 1;
     $('#f-hint').innerHTML = `Tiền phòng do bạn tự nhập, app không tự đổi. Giá tham khảo theo bảng giá: ${money(auto)}${!p.disabled && +p.value !== auto ? ` <button type="button" class="btn sm" data-act="useAutoPrice">Điền giá này</button>` : ''}${n > 1 ? ` · ${n} phòng, tổng ${money((+p.value || 0) * n)}` : ''}`;
   }
-  rpDraw();
 }
 function readTimes(b){
   const g = id => { const e = $('#' + id); return e ? fromInput(e.value) : null; };
   return { ci: g('f-ci'), co: g('f-co'), aci: $('#f-aci') ? g('f-aci') : (b ? b.aci : null), aco: $('#f-aco') ? g('f-aco') : (b ? b.aco : null) };
 }
 function saveBooking(){
+  // Khung chọn giờ còn mở mà bấm lưu đơn: lấy luôn ngày giờ đang chọn trong khung.
+  if (modalState.rp && $('#rp') && !$('#rp').classList.contains('hidden')){ A.rpDone(); if (modalState.rp) return; }
   const ms = modalState, h = H(ms.houseId), now = Date.now();
   const b = ms.bookingId ? S.bookings.find(x => x.id === ms.bookingId) : null;
   if (!can(h.id, 'datphong', b ? 'sua' : 'them')) return errBox('f-err', 'Bạn không có quyền này.');
@@ -1181,6 +1196,7 @@ function openBooking(id){
   const group = b.groupId ? S.bookings.filter(x => x.groupId === b.groupId && x.id !== b.id) : [];
   const qrContent = `${r.name} ${b.guest.name}`.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').replace(/[^A-Za-z0-9 ]/g, '').toUpperCase().slice(0, 40);
   const acts = [];
+  if (can(h.id, 'datphong', 'them')) acts.push(`<button class="btn" data-act="bkAfter" data-id="${b.id}" title="Đặt lượt mới cho phòng ${esc(r.name)}, bắt đầu ngay sau lượt này">+ Đặt tiếp phòng này</button>`);
   if (canE && b.status === 'booked') acts.push(`<button class="btn primary" data-act="checkin" data-id="${b.id}">Nhận phòng</button>`);
   if (canE && b.status === 'inhouse') acts.push(`<button class="btn primary" data-act="checkout" data-id="${b.id}">Trả phòng</button>`);
   if (canPay && (b.status === 'inhouse' || b.status === 'booked' || (b.status === 'checkedout' && remain > 0))) acts.push(`<button class="btn" data-act="addPay" data-id="${b.id}">Thu tiền</button>`);
@@ -1553,6 +1569,13 @@ const A = {
     openBookingForm({ houseId: d.house, roomId: d.room, ci: oneDay ? null : t });
     if (oneDay){ $('#f-ci').value = toInput(t); $('#f-co').value = toInput(t + 2*HOUR); bookingRefresh(); }
   },
+  // Ngày đã kín lịch: đặt lượt mới cho cùng phòng, bắt đầu ngay sau lượt đang xem.
+  bkAfter: d => {
+    const b = S.bookings.find(x => x.id === d.id); if (!b) return;
+    const end = span(b)[1]; closeModal();
+    if (b.kind === 'gio') openBookingForm({ houseId: b.houseId, roomId: b.roomId, at: Math.max(end, r10(Date.now())), kindIn: 'gio' });
+    else openBookingForm({ houseId: b.houseId, roomId: b.roomId, ci: sod(end), kindIn: b.kind === 'quadem' ? 'quadem' : 'dem' });
+  },
   newBk: d => { openBookingForm({ houseId: d.house || (ui.house !== 'all' ? ui.house : null), roomId: d.room, ci: d.day ? +d.day : null }); },
   newBlock: () => openBlockForm(),
   editBlock: d => openBlockForm(d.id),
@@ -1563,15 +1586,27 @@ const A = {
   addPay: d => openPay(d.id),
   extend: d => openExtend(d.id),
   extQuick: d => { const b = S.bookings.find(x => x.id === modalState.id), h = H(b.houseId); const base = Math.max(b.co, b.status === 'checkedout' ? r10(Date.now()) : 0); const co = d.h === 'night' ? atTime(sod(base) + DAY, h.co) : base + (+d.h) * HOUR; $('#ex-co').value = toInput(co); extendRefresh(); },
-  rangeOpen: () => { const box = $('#rp'); if (!box) return; box.classList.toggle('hidden'); modalState.rpMonth = 0; rpDraw(); },
-  rpMonth: d => { const m = new Date(modalState.rpMonth); modalState.rpMonth = new Date(m.getFullYear(), m.getMonth() + (+d.d), 1).getTime(); rpDraw(); },
+  rangeOpen: () => { const box = $('#rp'); if (!box) return; const opening = box.classList.contains('hidden'); box.classList.toggle('hidden', !opening); if (opening) rpInit(); },
+  rpCancel: () => { const box = $('#rp'); if (box) box.classList.add('hidden'); modalState.rp = null; },
+  rpDone: () => {
+    const ms = modalState; rpReadTimes();
+    const { ci, co } = ms.rp, lockCi = $('#f-ci').disabled, aci = lockCi ? fromInput($('#f-ci').value) : ci;
+    if (!(co > aci)){ const e = $('#rp-err'); if (e){ e.textContent = 'Giờ trả phải sau giờ nhận phòng.'; e.classList.remove('hidden'); } return; }
+    if (!lockCi) $('#f-ci').value = toInput(ci);
+    $('#f-co').value = toInput(co);
+    $('#rp').classList.add('hidden'); ms.rp = null;
+    bookingRefresh();
+  },
+  rpMonth: d => { rpReadTimes(); const m = new Date(modalState.rpMonth); modalState.rpMonth = new Date(m.getFullYear(), m.getMonth() + (+d.d), 1).getTime(); rpDraw(); },
   rpDay: d => {
+    rpReadTimes();
     const t = +d.t, ms = modalState, h = H(ms.houseId), kind = $('#f-kind').value;
-    let ci = fromInput($('#f-ci').value), co = fromInput($('#f-co').value);
+    let { ci, co } = ms.rp;
+    const rpSet = (a, z) => { ms.rp = { ci: a, co: z }; rpDraw(); };
     if ($('#f-ci').disabled){ co = t + tod(co); if (co <= ci) return toast('Ngày trả phải sau giờ nhận phòng.', true); return rpSet(ci, co); }
     if ((ms.rpNext || 'ci') === 'ci' || t < sod(ci)){
       ci = t + tod(ci);
-      if (co <= ci) co = kind === 'gio' ? ci + 2*HOUR : atTime(t + DAY, kind === 'quadem' ? h.onOut : h.co);
+      if (co <= ci) co = kind === 'gio' ? ci + 2*HOUR : sod(t + DAY + 2*HOUR) + tod(co); // giữ giờ trả bạn đã chọn
       ms.rpNext = kind === 'gio' ? 'ci' : 'co';
     } else {
       co = t + tod(co);
@@ -1655,12 +1690,6 @@ const CHG = {
     modalState.priceTouched = false; bookingRefresh();
   },
   exCo: () => extendRefresh(),
-  rpTime: () => {
-    const hm = s => { const [a, b] = (s || '00:00').split(':').map(Number); return a * HOUR + b * MIN; };
-    const ci0 = fromInput($('#f-ci').value), co0 = fromInput($('#f-co').value);
-    const ci = $('#f-ci').disabled ? ci0 : sod(ci0) + hm($('#rp-ti').value), co = sod(co0) + hm($('#rp-to').value);
-    rpSet(ci, co);
-  },
   ciAt: () => ciDiff(),
   coCalc: () => coCalc(),
   fTime: () => { modalState.priceTouched = modalState.bookingId ? modalState.priceTouched : false; bookingRefresh(); },
