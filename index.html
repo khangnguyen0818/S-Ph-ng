@@ -11,7 +11,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="icon" type="image/png" href="icon-180.png">
-<script src="config.js?v=202611271809"></script><title>Sổ Phòng</title></head><body>
+<script src="config.js?v=202611271946"></script><title>Sổ Phòng</title></head><body>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -206,6 +206,16 @@ label.f > input,label.f > select,label.f > textarea{color:var(--ink);font-size:1
 @keyframes blink{50%{filter:brightness(1.18)}}
 @media (prefers-reduced-motion: reduce){.bar.st-late{animation:none}}
 .daylist .li{align-items:flex-start}
+/* mật khẩu cửa */
+.code-list{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+.code-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 12px;border-top:1px solid var(--line)}
+.code-row:first-child{border-top:0}
+.code-row.editing{background:var(--surface-2)}
+.code-main{flex:1 1 140px;min-width:0} .code-main b{display:block} .code-main small{color:var(--muted);font-size:12px}
+.code-cur{display:flex;flex-direction:column;align-items:flex-end;gap:1px;text-align:right}
+.code-cur small{font-size:11px;color:var(--muted)}
+.code{font-family:var(--f-display);font-weight:700;font-size:18px;letter-spacing:.06em;font-variant-numeric:tabular-nums}
+.btn.warn-btn{color:var(--st-late);border-color:color-mix(in srgb,var(--st-late) 45%,var(--line))}
 /* khung chọn ngày giờ nhận → trả */
 .rangebtn{display:flex;align-items:center;gap:8px;flex-wrap:wrap;width:100%;text-align:left;border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:9px 12px;min-height:44px;cursor:pointer;font-size:14px;color:var(--ink)}
 .rangebtn:hover{border-color:var(--accent)} .rangebtn:disabled{opacity:.6;cursor:default}
@@ -446,7 +456,7 @@ let queue = Promise.resolve(), pending = 0;
 function call(action, payload, opts = {}){
   // "Hiện ngay": sửa dữ liệu trên máy và đóng hộp thoại trước, máy chủ lưu phía sau.
   // Nếu máy chủ báo lỗi thì hiện thông báo và tải lại dữ liệu thật.
-  if (opts.apply){ try { opts.apply(); } catch (e) {} opts.optimistic = true; closeModal(); render(); }
+  if (opts.apply){ try { opts.apply(); } catch (e) {} opts.optimistic = true; if (!opts.keepOpen) closeModal(); render(); }
   pending++; busy = true; document.body.classList.add('busy');
   const btns = [...document.querySelectorAll('#modal button[type=submit]')]; btns.forEach(b => b.disabled = true);
   const p = queue.then(async () => {
@@ -623,7 +633,7 @@ function vToday(){
   const arrRow = b => { const h = H(b.houseId), r = RM(h, b.roomId), late = b.ci < now; return `<div class="li click" data-act="openBk" data-id="${b.id}">
       <div class="when">${fT(b.ci)}</div>${roomCell(b)}
       <div class="main"><b>${esc(guestName(b))}</b><span class="small muted">${hc(b)}${srcBadge(b.source, 'sm')} ${esc(b.source)} · ${BKIND[b.kind]}${late ? ` · <span class="late-text">trễ ${dur(now - b.ci)}</span>` : ''}${r && r.hk !== 'sach' ? ` · <span class="${'hk-' + r.hk}">phòng ${HK[r.hk].toLowerCase()}</span>` : ''}</span></div>
-      ${can(b.houseId, 'datphong', 'sua') ? `<button class="btn sm primary" data-act="checkin" data-id="${b.id}">Nhận phòng</button>` : ''}</div>`; };
+      ${can(b.houseId, 'datphong', 'sua') ? `<button class="btn sm ${b.infoSent ? '' : 'warn-btn'}" data-act="sendInfo" data-id="${b.id}" title="${b.infoSent ? 'Đã gửi lúc ' + fDT(b.infoSent) : 'Chưa gửi thông tin nhận phòng'}">${b.infoSent ? 'Đã gửi tin' : 'Gửi tin'}</button><button class="btn sm primary" data-act="checkin" data-id="${b.id}">Nhận phòng</button>` : ''}</div>`; };
   const depRow = (b, isOver) => `<div class="li click" data-act="openBk" data-id="${b.id}">
       <div class="when ${isOver ? 'red' : ''}">${fT(b.co)}</div>${roomCell(b)}
       <div class="main"><b>${esc(guestName(b))}</b><span class="small muted">${hc(b)}${BKIND[b.kind]} · ${isOver ? `<span class="late-text">quá giờ ${dur(now - b.co)}</span>` : 'còn ' + dur(b.co - now)}</span></div>
@@ -634,6 +644,7 @@ function vToday(){
   if (!hs.length) return `<div class="empty">Chưa có nhà nào. Vào mục “Nhà & phòng” để thêm nhà đầu tiên.</div>`;
   return `
   <div class="sec-head"><h2>Hôm nay, ${WD[new Date(now).getDay()]} ${fDY(now)}</h2><span class="muted small">cập nhật lúc ${fT(now)} · tự làm mới mỗi 30 giây</span><span class="grow"></span>
+    ${hs.some(h => can(h.id, 'datphong', 'sua')) ? '<button class="btn" data-act="openCodes">Mật khẩu cửa</button>' : ''}
     ${hs.some(h => can(h.id, 'datphong', 'them')) ? '<button class="btn primary" data-act="newBk">+ Đặt phòng</button>' : ''}</div>
   <div class="tiles">
     <div class="tile"><b>${free.length}<small class="muted" style="font-size:14px">/${rooms.length}</small></b><span>Phòng trống bây giờ</span></div>
@@ -845,7 +856,7 @@ function vHouses(){
       ${can(h.id, 'tien') ? `<dt>Tài khoản</dt><dd>${esc(h.bank.name)} · ${esc(h.bank.acc)} · ${esc(h.bank.holder)}</dd><dt>Loại phòng</dt><dd>${h.types.map(t => `${esc(t.name)}: ${money(t.night)}/đêm, ${money(t.h2)} 2 giờ đầu`).join('<br>')}</dd>` : ''}
       <dt>Đang có</dt><dd>${future} lượt đặt sắp tới hoặc khách đang ở</dd></dl>
       <div class="room-chips">${h.rooms.map(r => `<span class="chip">${esc(r.name)}</span>`).join('')}</div>
-      <div class="row">${can(h.id, 'caidat', 'sua') ? `<button class="btn sm" data-act="editHouse" data-id="${h.id}">Sửa thông tin</button><button class="btn sm" data-act="editRooms" data-id="${h.id}">Sửa phòng</button>` : ''}
+      <div class="row">${can(h.id, 'caidat', 'sua') ? `<button class="btn sm" data-act="editHouse" data-id="${h.id}">Sửa thông tin</button><button class="btn sm" data-act="editRooms" data-id="${h.id}">Sửa phòng</button>` : ''}${can(h.id, 'datphong', 'sua') ? `<button class="btn sm" data-act="openCodes" data-h="${h.id}">Mật khẩu & khu</button>` : ''}
       ${me.isOwner ? `<span class="grow"></span><button class="btn sm danger" data-act="archiveHouse" data-id="${h.id}">Xóa nhà</button>` : ''}</div></div>`;
   };
   return `<div class="sec-head"><h2>Nhà & phòng</h2><span class="grow"></span>${me.isOwner ? '<button class="btn primary" data-act="addHouse">+ Thêm nhà</button>' : ''}</div>
@@ -1197,6 +1208,7 @@ function openBooking(id){
   const qrContent = `${r.name} ${b.guest.name}`.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').replace(/[^A-Za-z0-9 ]/g, '').toUpperCase().slice(0, 40);
   const acts = [];
   if (can(h.id, 'datphong', 'them')) acts.push(`<button class="btn" data-act="bkAfter" data-id="${b.id}" title="Đặt lượt mới cho phòng ${esc(r.name)}, bắt đầu ngay sau lượt này">+ Đặt tiếp phòng này</button>`);
+  if (canE && (b.status === 'booked' || b.status === 'inhouse')) acts.push(`<button class="btn ${b.infoSent ? '' : 'primary'}" data-act="sendInfo" data-id="${b.id}">${b.infoSent ? 'Gửi lại thông tin' : 'Gửi thông tin nhận phòng'}</button>`);
   if (canE && b.status === 'booked') acts.push(`<button class="btn primary" data-act="checkin" data-id="${b.id}">Nhận phòng</button>`);
   if (canE && b.status === 'inhouse') acts.push(`<button class="btn primary" data-act="checkout" data-id="${b.id}">Trả phòng</button>`);
   if (canPay && (b.status === 'inhouse' || b.status === 'booked' || (b.status === 'checkedout' && remain > 0))) acts.push(`<button class="btn" data-act="addPay" data-id="${b.id}">Thu tiền</button>`);
@@ -1217,7 +1229,8 @@ function openBooking(id){
        <dt>Số người</dt><dd>${b.guest.adults} người lớn${b.guest.children ? ', ' + b.guest.children + ' trẻ em' : ''}</dd>
        ${group.length ? `<dt>Đặt theo đoàn</dt><dd>cùng ${group.map(x => 'P' + esc(RM(h, x.roomId).name)).join(', ')}</dd>` : ''}
        ${b.note ? `<dt>Ghi chú</dt><dd>${esc(b.note)}</dd>` : ''}
-       <dt>Phòng hiện</dt><dd><span class="pill hk-${r.hk}">${HK[r.hk]}</span></dd>
+       <dt>Phòng hiện</dt><dd><span class="pill hk-${r.hk}">${HK[r.hk]}</span>${gateOf(h, r) ? ` · ${esc(gateOf(h, r).name)}` : ''}</dd>
+       ${canE && (b.status === 'booked' || b.status === 'inhouse') ? `<dt>Gửi khách</dt><dd>${b.infoSent ? 'đã gửi thông tin lúc ' + fDT(b.infoSent) : '<span class="late-text">chưa gửi thông tin nhận phòng</span>'}</dd>` : ''}
      </dl>
      ${showM ? `<div class="card" style="padding:12px"><div class="money"><span>Tiền phòng</span><span>${money(b.price)}</span><span>Tiền cọc</span><span>− ${money(b.deposit)}</span>${b.payments.map(p => `<span class="muted">${p.amt < 0 ? 'Hoàn tiền' : 'Đã thu'} · ${esc(p.method)} · ${fDT(p.at)}</span><span>${p.amt < 0 ? '+ ' + money(-p.amt) : '− ' + money(p.amt)}</span>`).join('')}<span class="tot">${remain > 0 ? 'Còn phải thu' : remain < 0 ? 'Thu thừa' : 'Đã thu đủ'}</span><span class="tot ${remain > 0 ? 'red' : ''}">${money(Math.abs(remain))}</span></div>
        ${remain > 0 && b.status !== 'cancelled' ? `<div class="note" style="margin-top:10px"><b>Chuyển khoản:</b> ${esc(h.bank.name)} · ${esc(h.bank.acc)} · ${esc(h.bank.holder)} · Số tiền ${money(remain)} · Nội dung “${esc(qrContent)}”.<br>Bản thật sẽ hiện ảnh mã VietQR có sẵn số tiền.</div>` : ''}</div>` : ''}
@@ -1353,6 +1366,291 @@ async function delBk(id){
   call('delBooking', { id }, { apply: () => { S.bookings = S.bookings.filter(x => x.id !== id); if (b.kind === 'khoa' && r.hk === 'baotri') r.hk = 'ban'; } });
 }
 
+/* ---- mật khẩu cửa và tin nhắn nhận phòng ---- */
+// Mỗi lần app khóa đổi mã, nhập mã mới ở đây; mã đó dùng từ lúc "áp dụng từ" cho tới lần đổi sau.
+const codeHist = (hid, target) => (S.codes || []).filter(c => c.houseId === hid && c.target === target).sort((a, b) => b.from - a.from);
+const codeAt = (hid, target, t) => codeHist(hid, target).find(c => c.from <= t) || null;
+const gateOf = (h, r) => (h.gates || []).find(g => g.id === r.gateId) || null;
+const noAccent = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D');
+function codesHouse(){ const hs = housesWith('datphong', 'sua'); return (ui.house !== 'all' && hs.find(h => h.id === ui.house)) || hs[0] || null; }
+function openCodes(hid){
+  const h = H(hid || (codesHouse() || {}).id);
+  if (!h || !can(h.id, 'datphong', 'sua')) return toast('Bạn không có quyền xem mật khẩu cửa.', true);
+  modalState = { form:'codes', hid: h.id, edit: '', setup: false };
+  drawCodes();
+}
+function drawCodes(){
+  const ms = modalState, h = H(ms.hid), now = Date.now(), canSetup = can(h.id, 'caidat', 'sua');
+  if (ms.setup) return drawGateSetup();
+  const row = (target, label, sub, r) => {
+    const c = codeAt(h.id, target, now), next = codeHist(h.id, target).filter(x => x.from > now).pop();
+    if (ms.edit === target){
+      const isKey = r && ms.lock === 'key';
+      const lockPick = r ? `<div class="row" style="gap:16px;width:100%"><label class="row" style="gap:6px"><input type="radio" name="cd-lock" value="" data-chg="cdLock"${isKey ? '' : ' checked'}> Mật khẩu</label><label class="row" style="gap:6px"><input type="radio" name="cd-lock" value="key" data-chg="cdLock"${isKey ? ' checked' : ''}> Chìa khóa</label></div>` : '';
+      const fields = isKey
+        ? `<label class="f" style="width:100%">Ghi cho khách (tự viết)<input id="cd-key" maxlength="120" autocomplete="off" value="${esc(r.keyNote || '')}" placeholder="Chìa khóa cắm sẵn ở cửa phòng"></label>`
+        : `<div class="grid2" style="width:100%"><label class="f">Mật khẩu mới${r && r.lock === 'key' ? ' (để trống nếu giữ mã cũ)' : ''}<input id="cd-code" maxlength="30" autocomplete="off" autofocus value=""></label><label class="f">Áp dụng từ<input type="datetime-local" id="cd-from" value="${toInput(r10(now) > now ? r10(now) - 10*MIN : r10(now))}"></label></div>`;
+      return `<div class="code-row editing"><div class="code-main"><b>${label}</b>${sub ? `<small>${sub}</small>` : ''}</div>${lockPick}${fields}
+      <div class="row" style="justify-content:flex-end;width:100%"><button type="button" class="btn sm" data-act="codeCancel">Thôi</button><button type="button" class="btn sm primary" data-act="codeSave" data-t="${target}">Lưu</button></div></div>`;
+    }
+    const cur = r && r.lock === 'key'
+      ? `<span class="code">🗝 Chìa khóa</span><small>${esc(r.keyNote || 'chưa ghi chỗ để chìa')}</small>`
+      : (c ? `<span class="code">${esc(c.code)}</span><small>từ ${fDT(c.from)} · ${esc(c.by)}</small>` : '<span class="muted small">chưa nhập</span>') + (next ? `<small class="late-text">sẽ đổi thành ${esc(next.code)} lúc ${fDT(next.from)}</small>` : '');
+    return `<div class="code-row"><div class="code-main"><b>${label}</b>${sub ? `<small>${sub}</small>` : ''}</div>
+      <div class="code-cur">${cur}</div>
+      <button type="button" class="btn sm" data-act="codeEdit" data-t="${target}">Đổi</button></div>`;
+  };
+  const gates = h.gates || [];
+  const roomsBy = gid => groupRooms(h, h.rooms.filter(r => (r.gateId || '') === gid)).filter(x => !x.sub);
+  let html = `<div class="sec-head" style="margin-top:0"><h3>Mật khẩu cổng</h3>${canSetup ? '<span class="grow"></span><button type="button" class="btn sm" data-act="gateSetup">Sửa khu / cổng</button>' : ''}</div>`;
+  html += gates.length ? `<div class="code-list">${gates.map(g => row('gate:' + g.id, esc(g.name), esc(g.address || ''))).join('')}</div>`
+    : `<div class="note">Chưa có khu / cổng. ${canSetup ? 'Bấm “Sửa khu / cổng” để thêm, ví dụ “Nhà số 11” và “Nhà số 19”, rồi chọn phòng nào thuộc khu nào.' : 'Nhờ Chủ thêm khu / cổng.'}</div>`;
+  html += `<div class="sec-head"><h3>Mật khẩu phòng</h3></div>`;
+  const groups = gates.map(g => ({ name: g.name, rooms: roomsBy(g.id) })).concat([{ name: gates.length ? 'Chưa gán khu' : '', rooms: roomsBy('') }]).filter(x => x.rooms.length);
+  html += groups.map(gr => `${gr.name ? `<div class="list-sub">${esc(gr.name)}</div>` : ''}<div class="code-list">${gr.rooms.map(r => row('room:' + r.id, 'Phòng ' + esc(r.name), esc((typeOf(h, r) || {}).name || ''), r)).join('')}</div>`).join('');
+  openModal(`${mHead('Mật khẩu cửa · ' + esc(h.name))}<div class="modal-b">
+    <p class="muted small" style="margin:0">Khi app khóa đổi mã, bấm <b>Đổi</b> và nhập mã mới. Mã mới dùng từ lúc “áp dụng từ” cho tới lần đổi sau. Ảnh gửi khách tự lấy mã đang dùng. Phòng dùng chìa khóa: bấm <b>Đổi</b> → chọn “Chìa khóa”.</p>
+    ${html}</div><div class="modal-f"><button class="btn primary" type="button" data-act="close">Xong</button></div>`, { wide:true, nofocus: !ms.edit });
+  if (ms.edit) setTimeout(() => { const i = $('#cd-code'); if (i) i.focus(); }, 30);
+}
+function drawGateSetup(){
+  const ms = modalState, h = H(ms.hid);
+  if (!ms.gDraft) ms.gDraft = { gates: JSON.parse(JSON.stringify(h.gates || [])), map: Object.fromEntries(h.rooms.map(r => [r.id, r.gateId || ''])) };
+  const d = ms.gDraft;
+  if (d.note === undefined) d.note = h.guestNote || '';
+  openModal(`${mHead('Khu, wifi & lưu ý · ' + esc(h.name))}<div class="modal-b">
+    <p class="muted small" style="margin:0">Mỗi khu là một cổng có mật khẩu, địa chỉ và wifi riêng, ví dụ “Nhà số 11” và “Nhà số 19”. Ảnh gửi khách lấy từ đây.</p>
+    <div class="stack">${d.gates.map((g, i) => `<div class="card" style="padding:12px;display:grid;gap:8px"><div class="grid2"><label class="f">Tên khu<input data-g="${i}" data-k="name" maxlength="40" value="${esc(g.name)}" placeholder="Nhà số 11"></label><label class="f">Địa chỉ (gửi cho khách)<input data-g="${i}" data-k="address" maxlength="150" value="${esc(g.address || '')}" placeholder="11 đường S3, P. Tây Thạnh, TP. HCM"></label></div>
+      <div class="grid2"><label class="f">Tên wifi<input data-g="${i}" data-k="wifi" maxlength="40" autocomplete="off" value="${esc(g.wifi || '')}" placeholder="OlieHome_11"></label><label class="f">Mật khẩu wifi<input data-g="${i}" data-k="wifiPass" maxlength="40" autocomplete="off" value="${esc(g.wifiPass || '')}"></label></div></div>`).join('')}
+      <button type="button" class="btn sm" data-act="gateAdd" style="align-self:flex-start">+ Thêm khu</button></div>
+    <label class="f">Lưu ý cho khách (hiện trong ảnh, để trống nếu không cần)<textarea id="gs-note" rows="2" maxlength="300" placeholder="${esc(AC_NOTE)}">${esc(d.note)}</textarea></label>
+    ${d.note ? '' : '<button type="button" class="btn sm" data-act="gateNoteSample" style="align-self:flex-start">Dùng câu mẫu máy lạnh</button>'}
+    ${d.gates.length ? `<h3>Phòng thuộc khu nào</h3><div class="checks">${groupRooms(h, h.rooms).filter(x => !x.sub).map(r => `<label style="gap:8px">P${esc(r.name)}<select data-gr="${r.id}" style="min-height:30px;padding:2px 6px">${['<option value="">—</option>'].concat(d.gates.map((g, i) => `<option value="${g.id}"${(d.map[r.id] || '') === g.id ? ' selected' : ''}>${esc(g.name || 'Khu ' + (i + 1))}</option>`)).join('')}</select></label>`).join('')}</div>` : ''}
+    <div class="err hidden" id="gs-err"></div></div>
+    <div class="modal-f"><button class="btn" type="button" data-act="gateBack">Thôi</button><button class="btn primary" type="button" data-act="gateSave">Lưu khu / cổng</button></div>`, { wide:true, nofocus:true });
+}
+function readGateDraft(){
+  const d = modalState.gDraft;
+  document.querySelectorAll('[data-g]').forEach(el => { d.gates[+el.dataset.g][el.dataset.k] = el.value.trim(); });
+  document.querySelectorAll('[data-gr]').forEach(el => { d.map[el.dataset.gr] = el.value; });
+  const n = $('#gs-note'); if (n) d.note = n.value.trim();
+}
+const AC_NOTE = 'Bật MÁY LẠNH: lấy thẻ ở chìa khóa cắm vào ổ điện và NHẤN XUỐNG theo mũi tên';
+/* Ảnh mặt tiền: tải 1 lần rồi giữ trong máy. */
+const PHOTOS = {};
+async function loadPhoto(pid){
+  if (!pid) return '';
+  if (PHOTOS[pid]) return PHOTOS[pid];
+  const r = await rpc('getPhoto', { id: pid });
+  if (r.data) PHOTOS[pid] = r.data;
+  return PHOTOS[pid] || '';
+}
+/* Thu nhỏ ảnh chụp từ điện thoại còn khoảng 100–300KB trước khi lưu lên Google Sheet. */
+function shrinkPhoto(file){
+  return new Promise((res, rej) => {
+    const img = new Image(), url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      let w = Math.min(1080, img.naturalWidth), q = 0.8, out = '';
+      for (let i = 0; i < 6; i++){
+        const c = document.createElement('canvas'); c.width = w; c.height = Math.round(img.naturalHeight * w / img.naturalWidth);
+        c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+        out = c.toDataURL('image/jpeg', q);
+        if (out.length < 380000) return res(out);
+        w = Math.round(w * 0.8); q = Math.max(0.55, q - 0.07);
+      }
+      out.length < 400000 ? res(out) : rej(new Error('Ảnh quá lớn.'));
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); rej(new Error('Không đọc được ảnh.')); };
+    img.src = url;
+  });
+}
+/* ---- VietQR: tạo mã ngay trên máy, có sẵn số tiền và nội dung chuyển khoản ---- */
+const BANKS = [['Vietcombank','970436','vcb'],['Techcombank','970407','tcb'],['MB Bank','970422','mb mbbank quandoi'],['ACB','970416','acb'],['VPBank','970432','vpb'],['BIDV','970418','bidv'],['VietinBank','970415','ctg vietin'],['Agribank','970405','agri'],['Sacombank','970403','stb sacom'],['TPBank','970423','tpb'],['VIB','970441','vib'],['HDBank','970437','hdb'],['SHB','970443','shb'],['OCB','970448','ocb'],['MSB','970426','msb maritime'],['Eximbank','970431','eib exim'],['SeABank','970440','seab'],['LPBank','970449','lpb lienviet']];
+function bankOf(name){
+  const n = noAccent(name).toLowerCase().replace(/[^a-z0-9]/g, '');
+  if (!n) return null;
+  return BANKS.find(([nm, , al]) => n === nm.toLowerCase().replace(/[^a-z0-9]/g, '') || al.split(' ').some(a => n === a || n.startsWith(a) && a.length >= 3 || n.includes(nm.toLowerCase().replace(/[^a-z0-9]/g, '')))) || null;
+}
+function crc16(s){
+  let c = 0xFFFF;
+  for (let i = 0; i < s.length; i++){ c ^= s.charCodeAt(i) << 8; for (let j = 0; j < 8; j++) c = c & 0x8000 ? ((c << 1) ^ 0x1021) & 0xFFFF : (c << 1) & 0xFFFF; }
+  return c.toString(16).toUpperCase().padStart(4, '0');
+}
+function vietqrPayload(bin, acc, amount, content){
+  const f = (id, v) => id + String(v.length).padStart(2, '0') + v;
+  const s = f('00', '01') + f('01', amount ? '12' : '11') + f('38', f('00', 'A000000727') + f('01', f('00', bin) + f('01', acc)) + f('02', 'QRIBFTTA'))
+    + f('53', '704') + (amount ? f('54', String(Math.round(amount))) : '') + f('58', 'VN') + (content ? f('62', f('08', content)) : '') + '6304';
+  return s + crc16(s);
+}
+const scriptP = {};
+function loadScript(src){
+  return scriptP[src] || (scriptP[src] = new Promise((res, rej) => { const s = document.createElement('script'); s.src = src; s.onload = res; s.onerror = () => { delete scriptP[src]; rej(); }; document.head.appendChild(s); }));
+}
+async function qrMatrix(text){
+  if (!window.qrcode){
+    try { await loadScript('https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js'); }
+    catch (e) { await loadScript('https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js'); }
+  }
+  const q = window.qrcode(0, 'M'); q.addData(text); q.make();
+  return q;
+}
+let fontsP = null;
+function cardFonts(){
+  if (!fontsP) fontsP = new Promise(res => {
+    const l = document.createElement('link'); l.rel = 'stylesheet';
+    l.href = 'https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;700&family=Lora:ital,wght@0,600;1,500&display=swap';
+    document.head.appendChild(l);
+    const done = () => Promise.all(['600 60px Lora', 'italic 500 30px Lora', '400 30px "Be Vietnam Pro"', '700 30px "Be Vietnam Pro"'].map(f => document.fonts.load(f, 'Ăâđê'))).then(res, res);
+    l.onload = done; l.onerror = res; setTimeout(res, 3000);
+  });
+  return fontsP;
+}
+/* Thông tin nhận phòng của một đơn (dùng chung cho ảnh và tin nhắn chữ). */
+function infoData(b){
+  const h = H(b.houseId), r = RM(h, b.roomId), g = gateOf(h, r), t = Math.max(Date.now(), b.aci || b.ci);
+  const gc = g ? codeAt(h.id, 'gate:' + g.id, t) : null, isKey = r.lock === 'key', rc = isKey ? null : codeAt(h.id, 'room:' + r.id, t);
+  const remain = can(h.id, 'tien') ? b.price - paidOf(b) : 0;
+  const bank = remain > 0 && h.bank && h.bank.acc ? h.bank : null, bk = bank ? bankOf(bank.name) : null;
+  return { h, r, g, isKey, gate: gc ? gc.code : '', room: rc ? rc.code : '', keyNote: r.keyNote || '',
+    addr: (g && g.address) || h.address || '', wifi: g && g.wifi || '', wifiPass: g && g.wifiPass || '', note: h.guestNote || '',
+    guest: b.guest.name ? 'anh/chị ' + b.guest.name : 'anh/chị', floor: r.floor === 0 ? 'tầng trệt' : 'tầng ' + r.floor,
+    time: `${fT(b.ci)} ${fD(b.ci)} → ${fT(b.co)} ${fD(b.co)}`, remain, paidAll: can(h.id, 'tien') && b.price > 0 && remain <= 0,
+    bank, bin: bk ? bk[1] : '', bankName: bk ? bk[0] : (bank ? bank.name : ''),
+    content: (r.name + ' ' + noAccent(b.guest.name)).toUpperCase().replace(/[^A-Z0-9 ]/g, '').replace(/\s+/g, ' ').trim().slice(0, 25),
+    missing: [g && !gc ? 'mật khẩu cổng ' + g.name : '', !isKey && !rc ? 'mật khẩu phòng ' + r.name : '', isKey && !r.keyNote ? 'chỗ để chìa khóa phòng ' + r.name : ''].filter(Boolean) };
+}
+function infoText(b){
+  const d = infoData(b), L = [`${d.h.name} chào ${d.guest} ạ 🌿`];
+  if (d.addr || d.g) L.push(`🏠 ${[d.g && d.g.name, d.addr].filter(Boolean).join(' – ')}`);
+  if (d.g) L.push(`🚪 ${d.gate || '……'}`);
+  L.push(`🛏 Phòng ${d.r.name} (${d.floor}) · ${d.isKey ? '🗝 ' + (d.keyNote || '……') : '🔑 ' + (d.room || '……')}`);
+  if (d.wifi) L.push(`📶 ${d.wifi} · ${d.wifiPass}`);
+  L.push(`🕑 ${d.time}`);
+  if (d.note) L.push(`❄️ ${d.note}`);
+  L.push('🪪 Gửi giúp home ảnh CCCD nhé');
+  if (d.remain > 0) L.push(`💳 Còn ${money(d.remain)}${d.bank ? ' – quét mã QR trong ảnh' : ''}`);
+  return { text: L.join('\n'), missing: d.missing };
+}
+/* Vẽ ảnh nhận phòng kiểu homestay: ảnh nhà, mật khẩu, wifi, lưu ý, mã VietQR. Trả về data URL JPEG. */
+async function makeCard(b){
+  const d = infoData(b), W = 1080, P = 56;
+  await cardFonts();
+  let qr = null;
+  if (d.bank && d.bin) qr = await qrMatrix(vietqrPayload(d.bin, d.bank.acc, d.remain, d.content)).catch(() => null);
+  const C = { bg:'#F5EFE4', card:'#FFFDF8', ink:'#3A3029', soft:'#8C7D6C', green:'#56704F', line:'#ECE2D2', accent:'#B4573D', chip:'#EEF2E8' };
+  const SANS = '"Be Vietnam Pro", system-ui, sans-serif', SERIF = 'Lora, Georgia, serif';
+  const cv = document.createElement('canvas'); cv.width = W; cv.height = 3200;
+  const x = cv.getContext('2d'); x.textBaseline = 'top';
+  const rr = (X, Y, w, h, r) => { x.beginPath(); x.moveTo(X + r, Y); x.arcTo(X + w, Y, X + w, Y + h, r); x.arcTo(X + w, Y + h, X, Y + h, r); x.arcTo(X, Y + h, X, Y, r); x.arcTo(X, Y, X + w, Y, r); x.closePath(); };
+  const wrap = (text, maxW) => { const out = []; String(text).split('\n').forEach(par => { let line = ''; par.split(/\s+/).forEach(w => { const t = line ? line + ' ' + w : w; if (x.measureText(t).width > maxW && line){ out.push(line); line = w; } else line = t; }); out.push(line); }); return out; };
+  x.fillStyle = C.bg; x.fillRect(0, 0, W, cv.height);
+  let y = 40;
+  // ảnh nhà
+  y += 8;
+  // lời chào
+  x.fillStyle = C.green; x.font = `600 64px ${SERIF}`; x.fillText(d.h.name, P, y); y += 84;
+  x.fillStyle = C.soft; x.font = `400 34px ${SANS}`; x.fillText(`Chào ${d.guest}, chúc mình có kỳ nghỉ thật xinh 🌿`.slice(0, 80), P, y); y += 70;
+  // các dòng thông tin
+  const rows = [];
+  if (d.addr || d.g) rows.push({ i:'🏠', l:d.g ? d.g.name : 'Địa chỉ', v:d.addr || d.g.name });
+  if (d.g) rows.push({ i:'🚪', l:'Mật khẩu cổng', v:d.gate || '……', big:true });
+  rows.push(d.isKey ? { i:'🛏', l:`Phòng ${d.r.name} · ${d.floor}`, v:'🗝 ' + (d.keyNote || '……') } : { i:'🛏', l:`Phòng ${d.r.name} · ${d.floor} · mật khẩu`, v:d.room || '……', big:true });
+  if (d.wifi) rows.push({ i:'📶', l:'Wifi ' + d.wifi, v:d.wifiPass || '(không mật khẩu)', big:!!d.wifiPass });
+  rows.push({ i:'🕑', l:'Nhận phòng → Trả phòng', v:d.time });
+  const TX = P + 104, TW = W - TX - P - 24;
+  const meas = rows.map(r => { x.font = r.big ? `700 52px ${SANS}` : r.small ? `500 32px ${SANS}` : `500 36px ${SANS}`; const lines = wrap(r.v, TW); return { r, lines, lh: r.big ? 62 : r.small ? 44 : 48 }; });
+  const panelH = meas.reduce((s, m) => s + 70 + m.lines.length * m.lh, 26);
+  rr(40, y, W - 80, panelH, 32); x.fillStyle = C.card; x.fill();
+  let ry = y + 30;
+  meas.forEach((m, k) => {
+    x.fillStyle = C.chip; x.beginPath(); x.arc(P + 44, ry + 44, 38, 0, Math.PI * 2); x.fill();
+    x.font = `40px ${SANS}`; x.textAlign = 'center'; x.fillStyle = C.ink; x.fillText(m.r.i, P + 44, ry + 22); x.textAlign = 'left';
+    x.fillStyle = C.soft; x.font = `500 28px ${SANS}`; x.fillText(m.r.l, TX, ry); ry += 40;
+    x.fillStyle = m.r.big ? C.ink : C.ink; x.font = m.r.big ? `700 52px ${SANS}` : m.r.small ? `500 32px ${SANS}` : `500 36px ${SANS}`;
+    m.lines.forEach(t => { x.fillText(t, TX, ry); ry += m.lh; });
+    ry += 30;
+    if (k < meas.length - 1){ x.fillStyle = C.line; x.fillRect(TX, ry - 16, W - TX - 72, 2); }
+  });
+  y += panelH + 32;
+  // lưu ý (làm nổi bật) + nhắc CCCD ngay bên dưới
+  if (d.note){
+    // "Bật MÁY LẠNH: ..." → phần trước dấu hai chấm làm tiêu đề to, phần sau là cách làm
+    const m = /^([^:]{2,40}):\s*(.+)$/s.exec(d.note), head = m ? m[1].trim() : '', body = m ? m[2].trim() : d.note;
+    const TW2 = W - 80 - 150, HL = 60, BL = 52;
+    x.font = `800 48px ${SANS}`; const hl = head ? wrap(head, TW2) : [];
+    x.font = `700 38px ${SANS}`; const nl = wrap(body.charAt(0).toUpperCase() + body.slice(1), TW2);
+    const textH = hl.length * HL + (hl.length ? 8 : 0) + nl.length * BL, nh = Math.max(120, textH + 60);
+    rr(40, y, W - 80, nh, 32); x.fillStyle = '#FBE1D3'; x.fill();
+    x.fillStyle = C.accent; rr(40, y, 14, nh, 7); x.fill();
+    x.font = `56px ${SANS}`; x.textAlign = 'center'; x.fillText('❄️', P + 50, y + nh / 2 - 30); x.textAlign = 'left';
+    let ty = y + (nh - textH) / 2 + 2;
+    x.fillStyle = '#7A2A12'; x.font = `800 48px ${SANS}`; hl.forEach(t => { x.fillText(t, P + 112, ty); ty += HL; });
+    if (hl.length) ty += 8;
+    x.fillStyle = '#8E3418'; x.font = `700 38px ${SANS}`; nl.forEach(t => { x.fillText(t, P + 112, ty); ty += BL; });
+    y += nh + 28;
+  }
+  {
+    const t = '🪪  Gửi giúp home ảnh CCCD nhé';
+    x.font = `700 40px ${SANS}`; const tw = x.measureText(t).width, bw = tw + 96, bh = 92;
+    rr((W - bw) / 2, y, bw, bh, bh / 2); x.fillStyle = '#E4ECDD'; x.fill();
+    x.textAlign = 'center'; x.fillStyle = '#3F5A39'; x.fillText(t, W / 2, y + 24); x.textAlign = 'left';
+    y += bh + 32;
+  }
+  // thanh toán
+  if (d.remain > 0){
+    const QS = qr ? 320 : 0, payH = qr ? QS + 64 : 200;
+    rr(40, y, W - 80, payH, 32); x.fillStyle = C.card; x.fill();
+    let px = P + 16;
+    if (qr){
+      const n = qr.getModuleCount(), cell = Math.floor((QS - 24) / n), size = cell * n, qx = px + (QS - size) / 2, qy = y + 32 + (QS - size) / 2;
+      x.fillStyle = '#fff'; rr(px, y + 32, QS, QS, 20); x.fill();
+      x.fillStyle = '#1E1A17'; for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) if (qr.isDark(i, j)) x.fillRect(qx + j * cell, qy + i * cell, cell, cell);
+      px += QS + 36;
+    }
+    let py = y + 40; const pw = W - px - 72;
+    x.fillStyle = C.soft; x.font = `500 28px ${SANS}`; x.fillText('💳 Còn thanh toán', px, py); py += 42;
+    x.fillStyle = C.accent; x.font = `700 58px ${SANS}`; x.fillText(money(d.remain), px, py); py += 80;
+    if (d.bank){
+      x.fillStyle = C.ink; x.font = `700 34px ${SANS}`; x.fillText(d.bank.acc, px, py); py += 46;
+      x.font = `500 28px ${SANS}`; x.fillStyle = C.soft;
+      wrap([d.bankName, d.bank.holder].filter(Boolean).join(' · '), pw).slice(0, 2).forEach(t => { x.fillText(t, px, py); py += 38; });
+      x.fillText('ND: ' + d.content, px, py);
+    }
+    y += payH + 32;
+  } else if (d.paidAll){ x.fillStyle = C.green; x.font = `600 34px ${SANS}`; x.textAlign = 'center'; x.fillText('✅ Đã thanh toán đủ, cảm ơn mình nhiều!', W / 2, y); x.textAlign = 'left'; y += 70; }
+  // lời nhắn cuối
+  x.textAlign = 'center';
+  y += 6;
+  x.fillStyle = C.green; x.font = `italic 500 32px ${SERIF}`; x.fillText(`Chúc ${d.guest} nghỉ ngơi vui vẻ ♡`, W / 2, y); y += 70;
+  x.textAlign = 'left';
+  const out = document.createElement('canvas'); out.width = W; out.height = y;
+  out.getContext('2d').drawImage(cv, 0, 0);
+  return out.toDataURL('image/jpeg', 0.9);
+}
+function openSendInfo(id){
+  const b = S.bookings.find(x => x.id === id); if (!b) return;
+  if (!can(b.houseId, 'datphong', 'sua')) return toast('Bạn không có quyền gửi thông tin cho khách.', true);
+  const d = infoData(b);
+  modalState = { form:'info', id, img:'' };
+  const warn = [];
+  if (d.missing.length) warn.push(`Chưa có ${d.missing.join(' và ')}. Bấm “Mật khẩu” để nhập.`);
+  if (d.remain > 0 && d.bank && !d.bin) warn.push(`Không nhận ra ngân hàng “${esc(d.bank.name)}” nên chưa tạo được mã QR. Sửa tên ngân hàng trong Cài đặt nhà (ví dụ Vietcombank, MB Bank, Techcombank).`);
+  if (d.remain > 0 && !d.bank && can(b.houseId, 'tien')) warn.push('Nhà này chưa có tài khoản ngân hàng nên ảnh chưa có mã QR (thêm trong Cài đặt nhà).');
+  openModal(`${mHead('Gửi thông tin nhận phòng')}<div class="modal-b">
+    ${warn.map(w => `<div class="err">${w}</div>`).join('')}
+    ${b.infoSent ? `<div class="note">Đã gửi lúc ${fDT(b.infoSent)}.</div>` : ''}
+    <div id="info-card" style="text-align:center"><p class="muted">Đang tạo ảnh…</p></div>
+    <p class="muted small" style="margin:0">Bấm “Gửi ảnh” để chia sẻ thẳng qua Zalo / Messenger, hoặc nhấn giữ vào ảnh để lưu.</p></div>
+    <div class="modal-f"><button class="btn" type="button" data-act="openCodes" data-h="${b.houseId}">Mật khẩu</button><span class="grow"></span><button class="btn" type="button" data-act="infoCopy">Sao chép chữ</button><button class="btn primary" type="button" data-act="infoShare" id="info-share" disabled>Gửi ảnh</button></div>`, { nofocus:true });
+  makeCard(b).then(url => {
+    if (modalState.form !== 'info' || modalState.id !== id) return;
+    modalState.img = url;
+    const box = $('#info-card'); if (box) box.innerHTML = `<img src="${url}" alt="Ảnh thông tin nhận phòng" style="width:100%;max-width:420px;border-radius:14px;box-shadow:0 2px 12px rgba(0,0,0,.12)">`;
+    const s = $('#info-share'); if (s) s.disabled = false;
+  }).catch(e => { const box = $('#info-card'); if (box) box.innerHTML = `<div class="err">Chưa tạo được ảnh (${esc(e && e.message || e)}). Bạn vẫn có thể bấm “Sao chép chữ”.</div>`; });
+}
+
 /* ---- dọn phòng ---- */
 async function hkOp(op, hid, rid){
   const h = H(hid), r = RM(h, rid), now = Date.now();
@@ -1389,7 +1687,7 @@ function openHouseForm(id){
     <div class="grid2"><label class="f">Địa chỉ<input id="h-addr" maxlength="120" value="${esc(h ? h.address : '')}"></label><label class="f">Điện thoại<input id="h-phone" maxlength="20" value="${esc(h ? h.phone : '')}"></label></div>
     <div class="grid2"><label class="f">Giờ nhận phòng chuẩn<input type="time" id="h-ci" value="${h ? h.ci : '14:00'}" required></label><label class="f">Giờ trả phòng chuẩn<input type="time" id="h-co" value="${h ? h.co : '12:00'}" required></label>
     <label class="f">Qua đêm: nhận từ<input type="time" id="h-onin" value="${h ? h.onIn : '22:00'}"></label><label class="f">Qua đêm: trả trước<input type="time" id="h-onout" value="${h ? h.onOut : '10:00'}"></label></div>
-    ${showM ? `<h3>Tài khoản nhận tiền (VietQR)</h3><div class="grid3"><label class="f">Ngân hàng<input id="h-bank" maxlength="40" value="${esc(h ? h.bank.name : '')}"></label><label class="f">Số tài khoản<input id="h-acc" inputmode="numeric" maxlength="20" value="${esc(h ? h.bank.acc : '')}"></label><label class="f">Chủ tài khoản<input id="h-holder" maxlength="50" value="${esc(h ? h.bank.holder : '')}"></label></div>
+    ${showM ? `<h3>Tài khoản nhận tiền (VietQR)</h3><div class="grid3"><label class="f">Ngân hàng<input id="h-bank" maxlength="40" list="bank-list" placeholder="Vietcombank" value="${esc(h ? h.bank.name : '')}"><datalist id="bank-list">${BANKS.map(b => `<option value="${b[0]}">`).join('')}</datalist></label><label class="f">Số tài khoản<input id="h-acc" inputmode="numeric" maxlength="20" value="${esc(h ? h.bank.acc : '')}"></label><label class="f">Chủ tài khoản<input id="h-holder" maxlength="50" value="${esc(h ? h.bank.holder : '')}"></label></div>
     <div class="row"><h3 class="grow">Loại phòng và bảng giá</h3><button class="btn sm" type="button" data-act="addType">+ Loại phòng</button></div><div id="h-types"></div>` : ''}
     ${!h ? '<p class="muted small" style="margin:0">Sau khi tạo nhà, bấm “Sửa phòng” để thêm danh sách phòng (nếu không sao chép từ nhà khác).</p>' : ''}
     <div class="err hidden" id="h-err"></div></div>
@@ -1441,7 +1739,7 @@ function saveRooms(){
   const removed = h.rooms.filter(r => !list.find(x => x.id === r.id));
   if (removed.length && !can(h.id, 'caidat', 'xoa')) return errBox('rm-err', 'Bạn không có quyền xóa phòng.');
   const known = new Set(h.rooms.map(r => r.id));
-  call('saveRooms', { houseId: h.id, rooms: list.map(x => ({ id: known.has(x.id) ? x.id : '', name: x.name, floor: x.floor, typeId: x.typeId })) }, { apply: () => {
+  call('saveRooms', { houseId: h.id, rooms: list.map(x => ({ id: known.has(x.id) ? x.id : '', name: x.name, floor: x.floor, typeId: x.typeId, gateId: (h.rooms.find(r => r.id === x.id) || {}).gateId || '' })) }, { apply: () => {
     const old = Object.fromEntries(h.rooms.map(r => [r.id, r]));
     h.rooms = list.map(x => old[x.id] ? Object.assign(old[x.id], { name: x.name, floor: x.floor, typeId: x.typeId })
       : { id: x.id, name: x.name, floor: x.floor, typeId: x.typeId, hk: 'sach', hkBy: '', hkStart: null, hkEnd: null, hkDoneAt: Date.now(), hkNote: '', assignee: '', dnd: false });
@@ -1569,6 +1867,57 @@ const A = {
     openBookingForm({ houseId: d.house, roomId: d.room, ci: oneDay ? null : t });
     if (oneDay){ $('#f-ci').value = toInput(t); $('#f-co').value = toInput(t + 2*HOUR); bookingRefresh(); }
   },
+  openCodes: d => openCodes(d.h),
+  sendInfo: d => openSendInfo(d.id),
+  codeEdit: d => { const m = /^room:(.+)$/.exec(d.t), r = m && RM(H(modalState.hid), m[1]); modalState.edit = d.t; modalState.lock = r ? (r.lock || '') : ''; drawCodes(); },
+  codeCancel: () => { modalState.edit = ''; drawCodes(); },
+  codeSave: d => {
+    const ms = modalState, m = /^room:(.+)$/.exec(d.t), r = m && RM(H(ms.hid), m[1]);
+    if (r && ms.lock === 'key'){
+      const keyNote = ($('#cd-key').value || '').trim();
+      if (!keyNote) return toast('Hãy ghi chỗ để chìa khóa cho khách.', true);
+      call('setRoomKey', { houseId: ms.hid, roomId: r.id, lock: 'key', keyNote }, { keepOpen: true, apply: () => { r.lock = 'key'; r.keyNote = keyNote; } });
+      ms.edit = ''; return drawCodes();
+    }
+    const code = ($('#cd-code').value || '').trim(), from = fromInput($('#cd-from').value) || Date.now();
+    if (r && r.lock === 'key'){
+      if (!code && !codeAt(ms.hid, d.t, Date.now())) return toast('Hãy nhập mật khẩu phòng.', true);
+      call('setRoomKey', { houseId: ms.hid, roomId: r.id, lock: '' }, { keepOpen: true, apply: () => { r.lock = ''; } });
+      if (!code){ ms.edit = ''; return drawCodes(); }
+    }
+    if (!code) return toast('Hãy nhập mật khẩu mới.', true);
+    call('setCode', { houseId: ms.hid, target: d.t, code, from }, { keepOpen: true, apply: () => { (S.codes = S.codes || []).push({ id: 'tmp' + uid(), houseId: ms.hid, target: d.t, code, from, by: me.name, at: Date.now() }); } });
+    ms.edit = ''; drawCodes();
+  },
+  gateSetup: () => { modalState.setup = true; modalState.gDraft = null; drawCodes(); },
+  gateAdd: () => { readGateDraft(); modalState.gDraft.gates.push({ id: uid(), name: '', address: '', wifi: '', wifiPass: '' }); drawGateSetup(); },
+  gateNoteSample: () => { readGateDraft(); modalState.gDraft.note = AC_NOTE; drawGateSetup(); },
+  gateBack: () => { modalState.setup = false; modalState.gDraft = null; drawCodes(); },
+  gateSave: () => {
+    readGateDraft();
+    const ms = modalState, d = ms.gDraft, h = H(ms.hid);
+    const gates = d.gates.filter(g => g.name).map(g => { const o = (h.gates || []).find(x => x.id === g.id) || {}; return { id: g.id, name: g.name, address: g.address || '', wifi: g.wifi || '', wifiPass: g.wifiPass || '', photo: o.photo || '' }; });
+    call('saveGates', { houseId: h.id, gates, roomGates: d.map, guestNote: d.note }, { keepOpen: true, apply: () => { h.gates = gates; h.guestNote = d.note; h.rooms.forEach(r => { r.gateId = gates.some(g => g.id === d.map[r.id]) ? d.map[r.id] : ''; }); } });
+    ms.setup = false; ms.gDraft = null; drawCodes();
+  },
+  infoMark: () => { const b = S.bookings.find(x => x.id === modalState.id); if (!b) return; call('markSent', { id: b.id }, { keepOpen: true, apply: () => { b.infoSent = Date.now(); } }); },
+  infoCopy: () => {
+    const b = S.bookings.find(x => x.id === modalState.id); if (!b) return;
+    const text = infoText(b).text;
+    const done = () => toast('Đã sao chép chữ. Dán vào Zalo hoặc Messenger.');
+    const fallback = () => { try { const ta = document.createElement('textarea'); ta.value = text; ta.style.cssText = 'position:fixed;opacity:0'; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); done(); } catch (e) { toast('Không tự sao chép được.', true); } };
+    try { navigator.clipboard.writeText(text).then(done, fallback); } catch (e) { fallback(); }
+  },
+  infoShare: async () => {
+    const ms = modalState, b = S.bookings.find(x => x.id === ms.id); if (!b || !ms.img) return;
+    const name = `nhan-phong-${RM(H(b.houseId), b.roomId).name}-${noAccent(b.guest.name || 'khach').replace(/[^A-Za-z0-9]+/g, '-')}.jpg`;
+    const blob = await (await fetch(ms.img)).blob(), file = new File([blob], name, { type: 'image/jpeg' });
+    try {
+      if (navigator.canShare && navigator.canShare({ files: [file] })){ await navigator.share({ files: [file] }); A.infoMark(); return; }
+    } catch (e) { if (e && e.name === 'AbortError') return; }
+    try { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); a.remove(); toast('Đã lưu ảnh. Mở Zalo và gửi ảnh cho khách.'); A.infoMark(); }
+    catch (e) { toast('Nhấn giữ vào ảnh để lưu rồi gửi cho khách.', true); }
+  },
   // Ngày đã kín lịch: đặt lượt mới cho cùng phòng, bắt đầu ngay sau lượt đang xem.
   bkAfter: d => {
     const b = S.bookings.find(x => x.id === d.id); if (!b) return;
@@ -1672,6 +2021,20 @@ document.addEventListener('click', e => {
   f(el.dataset, el, e);
 });
 const CHG = {
+  cdLock: el => { modalState.lock = el.value; drawCodes(); },
+  gatePhoto: async el => {
+    const f = el.files && el.files[0]; if (!f) return;
+    readGateDraft();
+    const ms = modalState, d = ms.gDraft, g = d.gates[+el.dataset.gi], hid = ms.hid;
+    let data;
+    try { data = await shrinkPhoto(f); } catch (e) { return toast(e.message, true); }
+    g.photoData = data; drawGateSetup();
+    toast('Đang lưu ảnh…');
+    call('savePhoto', { houseId: hid, gateId: g.id, data }, { keepOpen: true, apply: () => {}, after: () => {
+      const sv = (H(hid).gates || []).find(x => x.id === g.id); if (sv && sv.photo) PHOTOS[sv.photo] = data;
+      toast('Đã lưu ảnh nhà.');
+    } });
+  },
   house: el => { ui.house = el.value; ui.scrollNow = true; render(); },
   floor: el => { ui.floor = el.value; render(); },
   repFrom: el => { ui.repFrom = el.value; render(); },
