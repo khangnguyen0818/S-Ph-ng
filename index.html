@@ -11,7 +11,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="icon" type="image/png" href="icon-180.png">
-<script src="config.js?v=202611280940"></script><title>Sổ Phòng</title></head><body>
+<script src="config.js?v=202611280945"></script><title>Sổ Phòng</title></head><body>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -1559,15 +1559,16 @@ async function makeCard(b){
   if (d.wifi) rows.push({ i:'📶', l:'Wifi ' + d.wifi, v:d.wifiPass || '(không mật khẩu)' });
   rows.push({ i:'🕑', l:'Nhận phòng → Trả phòng', v:d.time });
   const TX = P + 104, TW = W - TX - P - 24;
-  const meas = rows.map(r => { x.font = r.big ? `700 52px ${SANS}` : r.small ? `500 32px ${SANS}` : `500 36px ${SANS}`; const lines = wrap(r.v, TW); return { r, lines, lh: r.big ? 62 : r.small ? 44 : 48 }; });
-  const panelH = meas.reduce((s, m) => s + 70 + m.lines.length * m.lh, 26);
+  const meas = rows.map(r => { x.font = r.big ? `800 60px ${SANS}` : r.small ? `500 32px ${SANS}` : `500 36px ${SANS}`; const lines = wrap(r.v, TW); return { r, lines, lh: r.big ? 70 : r.small ? 44 : 48 }; });
+  const panelH = meas.reduce((s, m) => s + 70 + (m.r.big ? 10 : 0) + m.lines.length * m.lh, 26);
   rr(40, y, W - 80, panelH, 32); x.fillStyle = C.card; x.fill();
   let ry = y + 30;
   meas.forEach((m, k) => {
     x.fillStyle = C.chip; x.beginPath(); x.arc(P + 44, ry + 44, 38, 0, Math.PI * 2); x.fill();
     x.font = `40px ${SANS}`; x.textAlign = 'center'; x.fillStyle = C.ink; x.fillText(m.r.i, P + 44, ry + 22); x.textAlign = 'left';
-    x.fillStyle = C.soft; x.font = `500 28px ${SANS}`; x.fillText(m.r.l, TX, ry); ry += 40;
-    x.fillStyle = m.r.big ? C.ink : C.ink; x.font = m.r.big ? `700 52px ${SANS}` : m.r.small ? `500 32px ${SANS}` : `500 36px ${SANS}`;
+    if (m.r.big){ x.fillStyle = C.green; x.font = `800 36px ${SANS}`; x.fillText(m.r.l, TX, ry); ry += 50; }
+    else { x.fillStyle = C.soft; x.font = `500 28px ${SANS}`; x.fillText(m.r.l, TX, ry); ry += 40; }
+    x.fillStyle = m.r.big ? C.accent : C.ink; x.font = m.r.big ? `800 60px ${SANS}` : m.r.small ? `500 32px ${SANS}` : `500 36px ${SANS}`;
     m.lines.forEach(t => { x.fillText(t, TX, ry); ry += m.lh; });
     ry += 30;
     if (k < meas.length - 1){ x.fillStyle = C.line; x.fillRect(TX, ry - 16, W - TX - 72, 2); }
