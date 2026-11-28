@@ -11,7 +11,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="icon" type="image/png" href="icon-180.png">
-<script src="config.js?v=202611271946"></script><title>Sổ Phòng</title></head><body>
+<script src="config.js?v=202611280805"></script><title>Sổ Phòng</title></head><body>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -1525,8 +1525,8 @@ function infoText(b){
   if (d.addr || d.g) L.push(`🏠 ${[d.g && d.g.name, d.addr].filter(Boolean).join(' – ')}`);
   if (d.g) L.push(`🚪 ${d.gate || '……'}`);
   L.push(`🛏 Phòng ${d.r.name} (${d.floor}) · ${d.isKey ? '🗝 ' + (d.keyNote || '……') : '🔑 ' + (d.room || '……')}`);
-  if (d.wifi) L.push(`📶 ${d.wifi} · ${d.wifiPass}`);
   L.push(`🕑 ${d.time}`);
+  if (d.wifi) L.push(`📶 ${d.wifi} · ${d.wifiPass}`);
   if (d.note) L.push(`❄️ ${d.note}`);
   L.push('🪪 Gửi giúp home ảnh CCCD nhé');
   if (d.remain > 0) L.push(`💳 Còn ${money(d.remain)}${d.bank ? ' – quét mã QR trong ảnh' : ''}`);
@@ -1556,8 +1556,8 @@ async function makeCard(b){
   if (d.addr || d.g) rows.push({ i:'🏠', l:d.g ? d.g.name : 'Địa chỉ', v:d.addr || d.g.name });
   if (d.g) rows.push({ i:'🚪', l:'Mật khẩu cổng', v:d.gate || '……', big:true });
   rows.push(d.isKey ? { i:'🛏', l:`Phòng ${d.r.name} · ${d.floor}`, v:'🗝 ' + (d.keyNote || '……') } : { i:'🛏', l:`Phòng ${d.r.name} · ${d.floor} · mật khẩu`, v:d.room || '……', big:true });
-  if (d.wifi) rows.push({ i:'📶', l:'Wifi ' + d.wifi, v:d.wifiPass || '(không mật khẩu)', big:!!d.wifiPass });
   rows.push({ i:'🕑', l:'Nhận phòng → Trả phòng', v:d.time });
+  if (d.wifi) rows.push({ i:'📶', l:'Wifi ' + d.wifi, v:d.wifiPass || '(không mật khẩu)', big:!!d.wifiPass });
   const TX = P + 104, TW = W - TX - P - 24;
   const meas = rows.map(r => { x.font = r.big ? `700 52px ${SANS}` : r.small ? `500 32px ${SANS}` : `500 36px ${SANS}`; const lines = wrap(r.v, TW); return { r, lines, lh: r.big ? 62 : r.small ? 44 : 48 }; });
   const panelH = meas.reduce((s, m) => s + 70 + m.lines.length * m.lh, 26);
